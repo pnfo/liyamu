@@ -1,0 +1,120 @@
+# options	keys	shown	note
+# --- Easy Singlish (sing): forgiving spelling, the likeliest word wins. ␣ commits.
+sing	k	ක්
+sing	kaa	කා
+sing	lanka␣	ලංකා 	n before k reads as ං
+sing	lankawa␣	ලංකාව 
+sing	sri␣lanka␣	ශ්‍රී ලංකා 
+sing	shri␣	ශ්‍රී 
+sing	amma␣	අම්මා 	a final a is often ා
+sing	yanawa␣	යනවා 
+sing	bhavana␣	භාවනා 
+sing	bawana␣	භාවනා 	b for භ when the word says so
+sing	swamin␣wahanse␣	ස්වාමීන් වහන්සේ 
+sing	sinhala␣	සිංහල 
+sing	thaththa␣	තාත්තා 	everyday words (data/lexicon/everyday.tsv) beat book words (තත්ථ)
+sing	ayya␣	අයියා 	yy is ියි, not a yansaya
+sing	oya␣one␣	ඔයා ඕනෙ 
+sing	phone␣	phone 	a common English word with no Sinhala reading stays English
+sing	bath␣	බත් 	English bath is only second: බත් is a word
+sing	game→␣	game 	→ picks the next suggestion (English game after ගමේ)
+sing	balanna→→←␣	බලන්නා 	arrows move through the suggestions, Space commits the highlighted one
+sing	balanna→⏎	බලන්නා	Enter commits the highlighted one without a new line
+sing	balanna⏎	බලන්න\n	Enter with nothing picked commits and goes to the app
+sing	kohomada␣	කොහොමද 
+sing	mokakda␣	මොකක්ද 
+sing	prashnaya␣	ප්‍රශ්නය 	rakaransaya
+sing	vidyava␣	විද්‍යාව 	yansaya
+sing	kaarya␣	කාර්ය 	no yansaya after ර
+sing	dharmaya␣	ධර්මය 
+sing	buddha␣	බුද්ධ 
+sing	budu␣	බුදු 
+sing	hamuduruwo␣	හාමුදුරුවෝ 
+sing	amba␣	අඹ 	mb reads as ඹ
+sing	ganga␣	ගඟ 	ng reads as ඟ
+sing	sangha␣	සංඝ 
+sing	pragna␣	ප්‍රඥා 
+sing	gnana␣	ඥාන 
+sing	nirvanaya␣	නිර්වාණය 
+sing	pansala␣	පන්සල 
+sing	pirith␣	පිරිත් 
+sing	sathutu␣	සතුටු 
+sing	enawa␣	එනවා 
+sing	oyata␣	ඔයාට 
+sing	ammata␣	අම්මට 
+sing	budux⌫␣	බුදු 	Backspace removes one Latin letter
+sing	mama,	මම,
+sing,fm	amma␣	wïud 
+# --- Helakuru keys (hela): fixed table, case-sensitive
+hela	k	ක්
+hela	ka	ක
+hela	kaa	කා
+hela	kA	කැ
+hela	kAA	කෑ
+hela	ki	කි
+hela	kI	කි	I is short
+hela	kii	කී
+hela	ku	කු
+hela	kuu	කූ
+hela	ke	කෙ
+hela	kee	කේ
+hela	kai	කෛ
+hela	ko	කො
+hela	kO	කො	O is short
+hela	koo	කෝ
+hela	kau	කෞ
+hela	kru	කෘ	ru after a consonant is ෘ
+hela	karu	කරු
+hela	kra	ක්‍ර
+hela	kya	ක්‍ය
+hela	kaarya	කාර්‍ය	r/y always join
+hela	kzya	ක්ය	z stops the join
+hela	da	ඩ	d is ඩ
+hela	dha	ද
+hela	qa	ද
+hela	Dha	ධ
+hela	Qa	ධ
+hela	Ba	ඹ
+hela	bha	භ
+hela	ca	ක
+hela	cha	ච
+hela	Sa	ෂ
+hela	sha	ශ
+hela	zka	ඤ
+hela	zha	ඥ
+hela	zqa	ඳ
+hela	zga	ඟ
+hela	zda	ඬ
+hela	NGa	ක්‍ෂ
+hela	laxkaa	ලංකා
+hela	lankaa	ලන්කා	no automatic ං
+hela	kaH	කඃ
+hela	sRu	ඍ
+hela	E	ඓ
+hela	ammaa	අම්මා
+hela	thaaththaa	තාත්තා
+# --- picking a suggestion with its number
+sing	amma1	අම්මා	1 is the first suggestion
+sing	mama1␣	මම 
+hela	ka1	ක1	Helakuru has no suggestions: digits are typed
+hela	gedh→␣	ගෙදර 	completions in Helakuru keys too
+sing,nosug	phone␣	පොනෙ 	suggestions off: always the best Sinhala reading
+# --- smart suggestions: real words, typos, context
+sing	gedar␣	ගෙදර 	a vowel left out is corrected
+sing	gedra␣	ගෙදර 
+sing	gedr␣	ගෙදර 
+sing	api␣gedara␣g→→␣	අපි ගෙදර ගියා 	after ගෙදර, g already offers ගිහින් and ගියා
+sing	kapenawa␣	කැපෙනවා 	a dictionary word the letters can spell wins over the literal reading
+sing	homagama␣	හෝමාගම 	place names are known words
+sing	nugegoda␣	නුගේගොඩ 	
+sing	hri␣ennm␣	හරි එන්නම් 	shorthand: vowels left out
+sing	gdr␣	ගෙදර 	
+sing	khmd␣	කොහොමද 	
+sing	kolaba␣	කොළඹ 	ඹ typed as b
+sing	col␣	කොළඹ 	a shortcut (shortcuts.tsv)
+sing	colombo␣	කොළඹ 	English name of a place
+sing	bs␣	බුදු සරණයි 	a shortcut for two words
+sing,repaya	dharma␣	ධර්‍ම 	repaya
+sing,conj	buddha␣	බුද්‍ධ 	Pali joined letters
+sing,pali	buddha␣dhamma␣	බුද‍්ධ ධම‍්ම 	touching letters
+sing,pali,conj,repaya	buddha␣dhamma␣dharma␣	බුද්‍ධ ධම‍්ම ධර්‍ම 	

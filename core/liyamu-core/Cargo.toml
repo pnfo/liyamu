@@ -1,0 +1,11 @@
+[package]
+name = "liyamu-core"
+description = "Sinhala input engine: Wijesekara and Singlish layouts, Unicode/FM/Isi output"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+regex = { version = "1", default-features = false, features = ["std", "unicode-perl", "unicode-case"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"

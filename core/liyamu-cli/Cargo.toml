@@ -1,0 +1,13 @@
+[package]
+name = "liyamu-cli"
+description = "Try the Liyamu engine in a terminal"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "liyamu"
+path = "src/main.rs"
+
+[dependencies]
+liyamu-core = { path = "../liyamu-core" }

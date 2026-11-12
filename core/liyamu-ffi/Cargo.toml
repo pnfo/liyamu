@@ -1,0 +1,13 @@
+[package]
+name = "liyamu-ffi"
+description = "C ABI over liyamu-core for the native input method shells"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+name = "liyamu"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[dependencies]
+liyamu-core = { path = "../liyamu-core" }

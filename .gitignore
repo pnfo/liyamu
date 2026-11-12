@@ -1,0 +1,5 @@
+/target
+.DS_Store
+/macos/build
+/data/corpus/
+/reference/

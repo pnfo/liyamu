@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- One input method without input modes: the layout (Wijesekara / Easy Singlish / Helakuru keys) is chosen
+     in its menu. macOS would not enable the extra modes of a multi-mode input method. -->
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key><string>en</string>
+	<key>CFBundleExecutable</key><string>Liyamu</string>
+	<key>CFBundleIdentifier</key><string>lk.pitaka.inputmethod.Liyamu</string>
+	<key>CFBundleName</key><string>Liyamu</string>
+	<key>CFBundleDisplayName</key><string>Liyamu</string>
+	<key>CFBundlePackageType</key><string>APPL</string>
+	<key>CFBundleShortVersionString</key><string>0.4.0</string>
+	<key>CFBundleVersion</key><string>4</string>
+	<key>LSMinimumSystemVersion</key><string>12.0</string>
+	<key>LSUIElement</key><true/>
+	<key>NSPrincipalClass</key><string>NSApplication</string>
+	<key>InputMethodConnectionName</key><string>lk.pitaka.inputmethod.Liyamu_Connection</string>
+	<key>InputMethodServerControllerClass</key><string>LiyamuInputController</string>
+	<key>tsInputMethodCharacterRepertoireKey</key><array><string>Sinh</string></array>
+	<key>tsInputMethodIconFileKey</key><string>icon.tiff</string>
+	<key>TISIntendedLanguage</key><string>si</string>
+	<key>TISIconIsTemplate</key><true/>
+</dict>
+</plist>

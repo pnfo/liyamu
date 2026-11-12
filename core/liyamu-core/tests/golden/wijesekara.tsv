@@ -1,0 +1,104 @@
+# options	keys	shown	note
+# options: trad (default) | logical, pali, fm | isi, sing. keys: ␣ space, ⏎ enter, ⌫ backspace, ⌥ AltGr.
+# shown: committed text + word being composed; \n for a newline.
+#
+# --- traditional order: kombuva typed before its letter (Akkharapadayo's Win10 rules)
+-	fl	කෙ
+-	fld	කො
+-	fla	කේ
+-	flda	කෝ
+-	ffl	කෛ	two kombuvas
+-	flA	කෞ
+-	fl\I	ක්‍ෂෙ	kombuva before a joined pair
+-	l\fI	ක්‍ෂෙ	kombuva typed between the joined letters
+-	fl`a	ක්‍රේ
+-	fkHda	න්‍යෝ
+-	ft	ඓ
+-	lu~	කර්‍ම	repaya typed after its letter
+-	lu~d	කර්‍මා
+-	~u	ර්‍ම	at the start of a word the repaya comes first
+-	wdhqfndajdoh	ආයුබෝවාදය
+# --- vowel letters typed in pieces
+-	wd	ආ
+-	we	ඇ
+-	wE	ඈ
+-	WA	ඌ
+-	WQ	ඌ	Akkharapadayo's W Q
+-	RD	ඎ
+-	ta	ඒ
+-	Ta	ඕ
+-	TA	ඖ
+# --- joins
+-	l\I	ක්‍ෂ
+-	;\j	ත්‍ව
+-	l`	ක්‍ර
+-	lH	ක්‍ය
+-	J	ළු
+-	lx	කං
+-	lX	කඃ
+# --- AltGr
+-	⌥o	ඳ
+-	⌥.	ඟ
+-	⌥v	ඬ
+-	⌥x	ඞ
+-	⌥,	ඏ
+-	⌥C	ඦ
+-	⌥p	ඤ්ච
+-	⌥j	ද්‍ව
+-	⌥O	ද්‍ධ
+-	⌥G	ට්ඨ
+-	l⌥o	කඳ
+# --- word boundaries, punctuation, editing
+-	l;␣l	කත ක
+-	l'	ක.	the ' key is the full stop
+-	l"	ක,
+-	l/1	ක/1
+-	l⏎;	ක\nත
+-	fld⌫	කෙ	Backspace undoes one key
+-	fld⌫⌫⌫	
+-	l␣⌫	ක	nothing composed: Backspace goes to the app
+# --- logical (Unicode) order
+logical	lf	කෙ
+logical	lfa	කේ
+logical	lfd	කො
+logical	lff	කෛ
+logical	lfA	කෞ
+logical	l~u	කර්‍ම	repaya before its letter
+logical	fl	ෙක	kombuva first is not reordered
+# --- Pali (Akkharapadayo's Pali mode)
+pali	[ap	ඤ‍්ච	touching letters
+pali	uan	ම‍්බ
+pali	ua␣	ම් 	hal at the end of a word does not touch
+pali	ua	ම්
+pali	kaj	න්‍ව	these pairs are joined, not touching
+pali	laI	ක්‍ෂ
+pali	;a:	ත්‍ථ
+pali	kao	න්‍ද
+pali	kaO	න්‍ධ
+pali	oaO	ද්‍ධ
+pali	oaj	ද්‍ව
+pali	lafj	ක්‍වෙ	kombuva before the second letter
+pali	uafn	ම‍්බෙ
+pali	fla	කේ	hal after kombuva is still ේ
+pali	X	ඞ
+-	X	ඃ
+# --- FM output (expected values from pitaka.lk's converter)
+fm	fld	fld
+fm	fla	fla
+fm	ffl	ffl
+fm	f	f	kombuva before its letter shows as the FM kombuva
+fm	wdhqfndajdoh	wdhqfndajdoh
+fm	l\I	Ë
+fm	lu~	lu_
+fm	l'	l'
+fm	zl	zzl	quotes become curly: opening
+fm	l␣zl	l zzl
+fm,pali	[ap	[ap	touching letters fall back to plain hal
+# --- Isi output
+isi	fld	»Y£
+isi	lu~	Yv¡
+# --- suggestions: the word as typed, then common words that start with it
+	f.o→→␣	ගෙදරට 	→ moves to the next suggestion, Space commits it
+	f.o3	ගෙදරට	a number picks that suggestion
+	f.o←	ගෙද	← at the first suggestion commits and moves the caret as usual
+nosug	f.o3	ගෙද3	suggestions off: numbers are numbers
