@@ -13,6 +13,11 @@ import android.graphics.Typeface
 import android.os.Bundle
 import android.provider.Settings
 import android.text.InputType
+import android.text.SpannableString
+import android.text.Spanned
+import android.text.TextPaint
+import android.text.style.MetricAffectingSpan
+import android.text.style.RelativeSizeSpan
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
@@ -91,7 +96,7 @@ class MainActivity : Activity() {
         // the 🌐 key changes the layout too
         layoutListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key -> if (key == "layout") group.check(100 + prefs.layout) }
         prefs.p.registerOnSharedPreferenceChangeListener(layoutListener)
-        note("The 🌐 key on the keyboard also changes the layout.")
+        note("The globe key on the keyboard also changes the layout.")
 
         card("Suggestions")
         switch("Word suggestions", "suggestions", true, "A row of words above the keys; tap one to take it. Space takes the first.")
@@ -117,6 +122,24 @@ class MainActivity : Activity() {
     }
 
     // ---- the pieces
+
+    /** Sinhala is always set in Abhaya, a little larger so that it sits level with the Latin beside it. */
+    private fun si(s: String): CharSequence {
+        val out = SpannableString(s)
+        var i = 0
+        while (i < s.length) {
+            if (s[i] !in '\u0D80'..'\u0DFF') { i++; continue }
+            var j = i
+            while (j < s.length && (s[j] in '\u0D80'..'\u0DFF' || s[j] == '\u200D' || s[j] == '\u200C')) j++
+            out.setSpan(object : MetricAffectingSpan() {
+                override fun updateMeasureState(p: TextPaint) { p.typeface = sinhala }
+                override fun updateDrawState(p: TextPaint) { p.typeface = sinhala }
+            }, i, j, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            out.setSpan(RelativeSizeSpan(1.12f), i, j, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            i = j
+        }
+        return out
+    }
 
     private fun rounded(fill: Int, radius: Int, stroke: Int = 0) = GradientDrawable().apply {
         setColor(fill)
@@ -179,7 +202,7 @@ class MainActivity : Activity() {
 
     private fun note(s: String): TextView {
         val t = TextView(this).apply {
-            text = s
+            text = si(s)
             textSize = 13.5f
             setTextColor(colour(R.color.muted))
             setPadding(0, px(2), 0, px(6))
@@ -217,7 +240,7 @@ class MainActivity : Activity() {
     private fun switch(title: String, key: String, default: Boolean, example: String) {
         val states = arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf())
         col.addView(Switch(this).apply {
-            text = title
+            text = si(title)
             textSize = 16f
             setTextColor(colour(R.color.ink))
             thumbTintList = ColorStateList(states, intArrayOf(colour(R.color.accent), colour(R.color.muted)))
@@ -225,7 +248,7 @@ class MainActivity : Activity() {
             isChecked = prefs.p.getBoolean(key, default)
             setOnCheckedChangeListener { _, on -> prefs.p.edit().putBoolean(key, on).apply() }
         }, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = px(4) })
-        if (example.any { it in '\u0D80'..'\u0DFF' }) note(example).apply { if ('\u200D' !in example) typeface = sinhala; textSize = 17f; setTextColor(colour(R.color.ink)) } else note(example)
+        if (example.any { it in '\u0D80'..'\u0DFF' }) note(example).apply { textSize = 15.5f; setTextColor(colour(R.color.ink)) } else note(example)
     }
 
     companion object {

@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.res.Configuration
 import android.graphics.Canvas
 import android.graphics.Paint
+import android.graphics.Path
 import android.graphics.RectF
 import android.graphics.Typeface
 import android.os.Build
@@ -217,6 +218,7 @@ class KeyboardView(context: Context) : View(context) {
                 sinhalaLabel -> (if (k.label.length > 2) 17 else 23) * dp
                 else -> 21 * dp
             }
+            if (drawIcon(c, k, text.color, face)) continue
             // a sign on its own is drawn on a dotted circle by the font; ink centred vertically
             val fm = text.fontMetrics
             c.drawText(k.label, k.rect.centerX(), k.rect.centerY() - (fm.ascent + fm.descent) / 2, text)
@@ -228,6 +230,66 @@ class KeyboardView(context: Context) : View(context) {
             }
         }
         drawPreview(c)
+    }
+
+    private val shape = Path()
+
+    /** Shift, backspace, Enter and the layout key are drawn as solid shapes: the font's outline arrows are too faint. */
+    private fun drawIcon(c: Canvas, k: Key, colour: Int, face: Int): Boolean {
+        val x = k.rect.centerX()
+        val y = k.rect.centerY()
+        val u = dp
+        paint.color = colour
+        paint.strokeCap = Paint.Cap.ROUND
+        paint.strokeJoin = Paint.Join.ROUND
+        shape.rewind()
+        when (k.action) {
+            Key.SHIFT -> {
+                shape.moveTo(x, y - 10 * u); shape.lineTo(x + 10 * u, y); shape.lineTo(x + 4.5f * u, y)
+                shape.lineTo(x + 4.5f * u, y + 8.5f * u); shape.lineTo(x - 4.5f * u, y + 8.5f * u)
+                shape.lineTo(x - 4.5f * u, y); shape.lineTo(x - 10 * u, y); shape.close()
+                paint.style = Paint.Style.FILL_AND_STROKE
+                paint.strokeWidth = 1.6f * u
+                c.drawPath(shape, paint)
+            }
+            Key.ENTER -> {
+                paint.style = Paint.Style.STROKE
+                paint.strokeWidth = 3 * u
+                shape.moveTo(x + 8.5f * u, y - 7.5f * u); shape.lineTo(x + 8.5f * u, y + 3 * u); shape.lineTo(x - 3 * u, y + 3 * u)
+                c.drawPath(shape, paint)
+                shape.rewind()
+                shape.moveTo(x - 10 * u, y + 3 * u); shape.lineTo(x - 3 * u, y - 3.5f * u); shape.lineTo(x - 3 * u, y + 9.5f * u); shape.close()
+                paint.style = Paint.Style.FILL_AND_STROKE
+                paint.strokeWidth = 1.6f * u
+                c.drawPath(shape, paint)
+            }
+            Key.BACKSPACE -> {
+                shape.moveTo(x - 12 * u, y); shape.lineTo(x - 5 * u, y - 8 * u); shape.lineTo(x + 11 * u, y - 8 * u)
+                shape.lineTo(x + 11 * u, y + 8 * u); shape.lineTo(x - 5 * u, y + 8 * u); shape.close()
+                paint.style = Paint.Style.FILL_AND_STROKE
+                paint.strokeWidth = 1.6f * u
+                c.drawPath(shape, paint)
+                paint.style = Paint.Style.STROKE
+                paint.strokeWidth = 2 * u
+                paint.color = face
+                c.drawLine(x - 0.5f * u, y - 3.5f * u, x + 6.5f * u, y + 3.5f * u, paint)
+                c.drawLine(x - 0.5f * u, y + 3.5f * u, x + 6.5f * u, y - 3.5f * u, paint)
+            }
+            Key.LAYOUT -> {
+                // a globe in the ink of the keys
+                val r = 9.5f * u
+                paint.style = Paint.Style.STROKE
+                paint.strokeWidth = 1.7f * u
+                c.drawCircle(x, y, r, paint)
+                c.drawOval(x - 4.2f * u, y - r, x + 4.2f * u, y + r, paint)
+                c.drawLine(x - r, y, x + r, y, paint)
+                c.drawLine(x - 8.2f * u, y - 4.8f * u, x + 8.2f * u, y - 4.8f * u, paint)
+                c.drawLine(x - 8.2f * u, y + 4.8f * u, x + 8.2f * u, y + 4.8f * u, paint)
+            }
+            else -> { paint.style = Paint.Style.FILL; return false }
+        }
+        paint.style = Paint.Style.FILL
+        return true
     }
 
     /** The pressed letter, larger, above the finger that hides it. */

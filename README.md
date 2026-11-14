@@ -178,4 +178,5 @@ later ([LICENSE](LICENSE)).
   Office dictionaries as published on arutha.lk. Pali word forms: Digital Pāḷi Dictionary.
 - Everyday word counts: OpenSubtitles (via OPUS). Place names: OCHA COD-AB Sri Lanka and © OpenStreetMap
   contributors. People's names: Wikidata. Only word lists and counts derived from these are in the repo.
-- Abhaya font: `macos/Resources/fonts`.
+- Abhaya Uni font (`macos/Resources/fonts`, `android/app/src/main/assets`): © Pushpananda Ekanayake and the
+  Abhaya Libre Project Authors, SIL Open Font License 1.1.
