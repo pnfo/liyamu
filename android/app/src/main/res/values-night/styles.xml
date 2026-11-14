@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Warm charcoal with gold. -->
+    <style name="Liyamu" parent="@android:style/Theme.DeviceDefault.NoActionBar">
+        <item name="android:windowBackground">@color/page</item>
+        <item name="android:statusBarColor">@color/page</item>
+        <item name="android:navigationBarColor">@color/page</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:colorAccent">@color/accent</item>
+        <item name="android:textColorPrimary">@color/ink</item>
+    </style>
+    <color name="page">#1B1512</color>
+    <color name="card">#2A211C</color>
+    <color name="line">#40332B</color>
+    <color name="ink">#F3E9D6</color>
+    <color name="muted">#A8998A</color>
+    <color name="accent">#E3B75A</color>
+    <color name="on_accent">#2A1A12</color>
+</resources>

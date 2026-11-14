@@ -37,7 +37,7 @@ data/lexicon        word and word-pair counts, everyday words, names, places, di
 tools/              export-encodings.mjs, build-corpus.mjs, build-lexicon.mjs, build-names.mjs
 macos/              the macOS input method and its settings window (Swift, InputMethodKit)
 android/            the Android keyboard and its settings app (Kotlin)
-design/logo/        logo concepts and the script that draws them
+design/logo/        the icon set and the script that draws it
 ```
 
 ## Build and test

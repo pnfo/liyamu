@@ -4,11 +4,11 @@ plugins {
 
 // The engine is the Rust static library, built for each ABI by ../build-rust.sh before Gradle runs.
 android {
-    namespace 'lk.pitaka.liyamu'
+    namespace 'lk.arutha.liyamu'
     compileSdk 36
     ndkVersion '27.1.12297006'
     defaultConfig {
-        applicationId 'lk.pitaka.liyamu'
+        applicationId 'lk.arutha.liyamu'
         minSdk 24
         targetSdk 36
         versionCode 1

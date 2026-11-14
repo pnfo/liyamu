@@ -7,7 +7,7 @@ stores'; counts are given where the limit is tight. Screenshots are in `screensh
 
 - **Name:** Liyamu – Sinhala Keyboard (25) · සිංහල: ලියමු – සිංහල යතුරුපුවරුව
 - **Category:** Tools (Play) · Utilities (App Store) · **Price:** free · **Ads / in-app purchases:** none
-- **Privacy policy URL:** the published copy of `PRIVACY.md` (e.g. https://arutha.lk/liyamu/privacy)
+- **Privacy policy URL:** the published copy of `PRIVACY.md` (https://arutha.lk/liyamu#privacy, and in the repo once it is public)
 - **Website:** https://arutha.lk · **Source:** https://github.com/pnfo/liyamu
 
 ## Google Play
@@ -96,8 +96,8 @@ arutha.lk සහ pitaka.lk නිර්මාණය කළ Path Nirvana Foundati
 and deletion requests do not apply.)
 
 **Screenshots (phone, 1080×2400):** `screenshots/android/01-easy-singlish.png`, `02-shorthand.png`,
-`03-wijesekara.png`, `04-settings.png`, `05-dark.png`. Still needed: feature graphic 1024×500 and the 512 px
-icon, once the logo is chosen.
+`03-wijesekara.png`, `04-settings.png`, `05-dark.png`. Icon: `design/logo/icon-square-1024.png` (scale to 512).
+Feature graphic: `design/logo/feature-1024x500.png`.
 
 ## App Store (iOS) — text ready; the iOS keyboard itself is not built yet
 
@@ -126,4 +126,4 @@ Install: open the .pkg, then add Liyamu in System Settings › Keyboard › Text
 Sinhala. If it is not listed, log out and in once.
 ```
 
-Screenshot so far: `screenshots/macos/settings.png`. Still needed: one of the suggestion bar while typing.
+Screenshot so far: `screenshots/macos/settings.png` (to be retaken). Still needed: one of the suggestion bar while typing.

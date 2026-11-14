@@ -1,4 +1,4 @@
-package lk.pitaka.liyamu
+package lk.arutha.liyamu
 
 import android.content.Context
 import android.content.SharedPreferences

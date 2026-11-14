@@ -1,4 +1,4 @@
-package lk.pitaka.liyamu
+package lk.arutha.liyamu
 
 import android.content.Context
 import android.content.res.Configuration
@@ -60,13 +60,18 @@ class KeyboardView(context: Context) : View(context) {
     private val dp = resources.displayMetrics.density
     private val dark = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
     private val sinhala: Typeface = Typeface.createFromAsset(context.assets, "abhaya.ttf")
-    private val bg = if (dark) 0xFF10262C.toInt() else 0xFFE6ECEC.toInt()
-    private val keyBg = if (dark) 0xFF24424A.toInt() else 0xFFFFFFFF.toInt()
-    private val specialBg = if (dark) 0xFF183238.toInt() else 0xFFC9D6D8.toInt()
-    private val pressedBg = 0xFFF2A541.toInt()
-    private val accent = 0xFF0F4C5C.toInt()
-    private val ink = if (dark) 0xFFF6F1E4.toInt() else 0xFF14282D.toInt()
-    private val faint = if (dark) 0xFF9DB4B8.toInt() else 0xFF5C7378.toInt()
+    // Sepia by day (ivory keys on parchment, brown ink, maroon accents) and warm charcoal by night (gold accents):
+    // the colours of the icon.
+    private val bg = if (dark) 0xFF1B1512.toInt() else 0xFFE7DCC4.toInt()
+    private val strip = if (dark) 0xFF231B17.toInt() else 0xFFDFD2B6.toInt()
+    private val keyBg = if (dark) 0xFF362B25.toInt() else 0xFFFCF7EC.toInt()
+    private val keyEdge = if (dark) 0xFF120D0B.toInt() else 0xFFC9B892.toInt()
+    private val specialBg = if (dark) 0xFF2A211C.toInt() else 0xFFD6C7A6.toInt()
+    private val pressedBg = if (dark) 0xFF5A4636.toInt() else 0xFFF3CF7A.toInt()
+    private val accent = if (dark) 0xFFE3B75A.toInt() else 0xFF6E1C22.toInt()
+    private val onAccent = if (dark) 0xFF2A1A12.toInt() else 0xFFFFF8E8.toInt()
+    private val ink = if (dark) 0xFFF3E9D6.toInt() else 0xFF3B2A20.toInt()
+    private val faint = if (dark) 0xFFA8998A.toInt() else 0xFF8A765F.toInt()
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val text = Paint(Paint.ANTI_ALIAS_FLAG).apply { textAlign = Paint.Align.CENTER }
 
@@ -180,6 +185,8 @@ class KeyboardView(context: Context) : View(context) {
     override fun onDraw(c: Canvas) {
         c.drawColor(bg)
         place()
+        paint.color = strip
+        c.drawRect(0f, 0f, width.toFloat(), stripH, paint)
         drawCandidates(c)
         for (k in rows.flatten()) {
             val special = k.action != Key.TYPE && k.action != Key.TEXT && k.action != Key.SPACE
@@ -190,10 +197,15 @@ class KeyboardView(context: Context) : View(context) {
                 special -> specialBg
                 else -> keyBg
             }
-            c.drawRoundRect(k.rect, 7 * dp, 7 * dp, paint)
+            // a darker edge under the key gives it a little height
+            val face = paint.color
+            paint.color = keyEdge
+            c.drawRoundRect(k.rect.left, k.rect.top + 1.5f * dp, k.rect.right, k.rect.bottom + 1.5f * dp, 8 * dp, 8 * dp, paint)
+            paint.color = face
+            c.drawRoundRect(k.rect, 8 * dp, 8 * dp, paint)
             val sinhalaLabel = k.label.any { it in '඀'..'෿' }
             text.typeface = if (sinhalaLabel) sinhala else Typeface.DEFAULT
-            text.color = if (k.action == Key.ENTER || (k.action == Key.SHIFT && shift)) 0xFFFFFFFF.toInt() else if (k.action == Key.SPACE) faint else ink
+            text.color = if (k.action == Key.ENTER || (k.action == Key.SHIFT && shift)) onAccent else if (k.action == Key.SPACE) faint else ink
             text.textSize = when {
                 k.action == Key.SPACE -> 14 * dp
                 k.action == Key.SYMBOLS -> 15 * dp
@@ -210,6 +222,25 @@ class KeyboardView(context: Context) : View(context) {
                 c.drawText(k.alt, k.rect.right - 9 * dp, k.rect.top + 13 * dp, text)
             }
         }
+        drawPreview(c)
+    }
+
+    /** The pressed letter, larger, above the finger that hides it. */
+    private fun drawPreview(c: Canvas) {
+        val k = pressed ?: return
+        if (k.action != Key.TYPE && k.action != Key.TEXT) return
+        val w = maxOf(k.rect.width() * 1.35f, 46 * dp)
+        val cx = k.rect.centerX().coerceIn(w / 2 + 2 * dp, width - w / 2 - 2 * dp)
+        val r = RectF(cx - w / 2, k.rect.top - 58 * dp, cx + w / 2, k.rect.top - 4 * dp)
+        paint.color = keyEdge
+        c.drawRoundRect(r.left, r.top + 2 * dp, r.right, r.bottom + 2 * dp, 12 * dp, 12 * dp, paint)
+        paint.color = accent
+        c.drawRoundRect(r, 12 * dp, 12 * dp, paint)
+        text.typeface = if (k.label.any { it in '\u0D80'..'\u0DFF' }) sinhala else Typeface.DEFAULT
+        text.color = onAccent
+        text.textSize = 30 * dp
+        val fm = text.fontMetrics
+        c.drawText(k.label, r.centerX(), r.centerY() - (fm.ascent + fm.descent) / 2, text)
     }
 
     private fun drawCandidates(c: Canvas) {
@@ -218,7 +249,9 @@ class KeyboardView(context: Context) : View(context) {
             text.typeface = Typeface.DEFAULT
             text.textSize = 13 * dp
             text.color = faint
-            c.drawText("ලියමු · " + Prefs.LAYOUTS[layout], width / 2f, stripH / 2 + 5 * dp, text)
+            text.letterSpacing = 0.04f
+            c.drawText("ලියමු  ·  " + Prefs.LAYOUTS[layout], width / 2f, stripH / 2 + 5 * dp, text)
+            text.letterSpacing = 0f
             return
         }
         var x = 6 * dp
@@ -233,9 +266,14 @@ class KeyboardView(context: Context) : View(context) {
                 paint.color = accent
                 c.drawRoundRect(r, 8 * dp, 8 * dp, paint)
             }
-            text.color = if (i == selected) 0xFFFFFFFF.toInt() else ink
+            text.color = if (i == selected) onAccent else ink
             val fm = text.fontMetrics
             c.drawText(w, r.centerX(), r.centerY() - (fm.ascent + fm.descent) / 2, text)
+            // a hairline between the words that are not highlighted
+            if (i != selected && i + 1 != selected && i + 1 < candidates.size) {
+                paint.color = keyEdge
+                c.drawRect(r.right + 1.5f * dp, r.top + 9 * dp, r.right + 2.5f * dp, r.bottom - 9 * dp, paint)
+            }
             x += tw + 4 * dp
         }
     }

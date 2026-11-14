@@ -1,11 +1,11 @@
-/* JNI bridge between lk.pitaka.liyamu.Engine and the C API of the engine (liyamu.h).
+/* JNI bridge between lk.arutha.liyamu.Engine and the C API of the engine (liyamu.h).
  * A response comes back as String[]: handled ("1"/"0"), commit, preedit, selected, then the candidates. */
 #include <jni.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "liyamu.h"
 
-#define FN(name) Java_lk_pitaka_liyamu_Engine_##name
+#define FN(name) Java_lk_arutha_liyamu_Engine_##name
 
 static LiyamuOptions options(jint layout, jboolean order, jboolean pali, jboolean suggest, jboolean repaya,
                              jboolean conjuncts, jboolean pali_words) {
