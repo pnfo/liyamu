@@ -340,9 +340,9 @@ class KeyboardView(context: Context) : View(context) {
             val fm = text.fontMetrics
             c.drawText(w, r.centerX(), r.centerY() - (fm.ascent + fm.descent) / 2, text)
             // a hairline between the words that are not highlighted
-            if (i != selected && i + 1 != selected && i + 1 < candidates.size) {
+            if (i > 0 && i != selected && i - 1 != selected) {
                 paint.color = keyEdge
-                c.drawRect(r.right + 1.5f * dp, r.top + 9 * dp, r.right + 2.5f * dp, r.bottom - 9 * dp, paint)
+                c.drawRect(r.left - 2.5f * dp, r.top + 9 * dp, r.left - 1.5f * dp, r.bottom - 9 * dp, paint)
             }
             x += tw + 4 * dp
         }

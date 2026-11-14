@@ -27,8 +27,18 @@ android {
             version '3.22.1'
         }
     }
+    // The Play upload key: its place and passwords are in ~/.gradle/gradle.properties, never in the repo.
+    signingConfigs {
+        release {
+            storeFile file(findProperty('LIYAMU_STORE_FILE') ?: '/Volumes/2TB/Android/pitaka.lk.jks')
+            keyAlias findProperty('TIPITAKA_KEY_ALIAS') ?: ''
+            storePassword findProperty('TIPITAKA_STORE_PASSWORD') ?: ''
+            keyPassword findProperty('TIPITAKA_KEY_PASSWORD') ?: ''
+        }
+    }
     buildTypes {
         release {
+            if (findProperty('TIPITAKA_STORE_PASSWORD')) signingConfig signingConfigs.release
             minifyEnabled false
         }
     }
