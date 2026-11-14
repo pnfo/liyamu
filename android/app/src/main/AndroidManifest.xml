@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- No permissions at all: in particular no INTERNET, so nothing typed can leave the device. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- to find the phone's voice typing keyboard for the microphone key; this is not a permission -->
+    <queries>
+        <intent>
+            <action android:name="android.view.InputMethod" />
+        </intent>
+    </queries>
     <application
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"

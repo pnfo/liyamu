@@ -225,7 +225,7 @@ class MainActivity : Activity() {
             isChecked = prefs.p.getBoolean(key, default)
             setOnCheckedChangeListener { _, on -> prefs.p.edit().putBoolean(key, on).apply() }
         }, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = px(4) })
-        if (example.any { it in '\u0D80'..'\u0DFF' }) note(example).apply { typeface = sinhala; textSize = 15f } else note(example)
+        if (example.any { it in '\u0D80'..'\u0DFF' }) note(example).apply { if ('\u200D' !in example) typeface = sinhala; textSize = 17f; setTextColor(colour(R.color.ink)) } else note(example)
     }
 
     companion object {
@@ -243,6 +243,8 @@ Helakuru keys — exact phonetic typing: a අ, aa ආ, A ඇ, th ත, t ට, dh
 English — plain letters, so you do not have to change keyboards.
 
 Suggestions: tap a word to take it. Space takes the highlighted one.
+
+Voice typing: the microphone opens your phone's own voice typing (Google voice typing), and you come back here when you finish. Choose Sinhala in its languages. The sound goes to that service, not to Liyamu, which cannot use the microphone or the internet.
 
 Passwords, e-mail addresses and web addresses are always typed as plain letters and are never looked at.
 

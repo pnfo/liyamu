@@ -6,7 +6,11 @@ import android.inputmethodservice.InputMethodService
 import android.text.InputType
 import android.view.KeyEvent
 import android.view.View
+import android.os.Build
 import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodInfo
+import android.view.inputmethod.InputMethodManager
+import android.view.inputmethod.InputMethodSubtype
 
 /** The keyboard service: sends each key to the engine and shows what it answers. */
 class LiyamuService : InputMethodService(), KeyListener, SharedPreferences.OnSharedPreferenceChangeListener {
@@ -28,8 +32,9 @@ class LiyamuService : InputMethodService(), KeyListener, SharedPreferences.OnSha
 
     override fun onDestroy() {
         prefs.p.unregisterOnSharedPreferenceChangeListener(this)
+        super.onDestroy() // this still ends the word being typed, so the session goes after it
         Engine.destroy(session)
-        super.onDestroy()
+        session = 0
     }
 
     override fun onSharedPreferenceChanged(p: SharedPreferences?, key: String?) {
@@ -57,6 +62,31 @@ class LiyamuService : InputMethodService(), KeyListener, SharedPreferences.OnSha
             variation == InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS || variation == InputType.TYPE_TEXT_VARIATION_URI
         view?.setLayout(if (plain) 3 else prefs.layout)
         view?.setCandidates(emptyList(), 0)
+        view?.voice = !plain && voiceKeyboard() != null
+    }
+
+    /**
+     * Voice typing is done by the phone's own voice keyboard (Google voice typing), not by Liyamu, which has no
+     * microphone or internet permission: the key only changes to that keyboard, and it comes back here when done.
+     */
+    private fun voiceKeyboard(): Pair<InputMethodInfo, InputMethodSubtype>? {
+        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        for (m in imm.enabledInputMethodList) {
+            if (m.packageName == packageName) continue
+            for (s in imm.getEnabledInputMethodSubtypeList(m, true)) if (s.mode == "voice") return m to s
+        }
+        return null
+    }
+
+    override fun onVoice() {
+        val (m, s) = voiceKeyboard() ?: return
+        show(Response(Engine.commit(session)))
+        if (Build.VERSION.SDK_INT >= 28) switchInputMethod(m.id, s)
+        else {
+            val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+            @Suppress("DEPRECATION")
+            imm.setInputMethodAndSubtype(window?.window?.attributes?.token ?: return, m.id, s)
+        }
     }
 
     override fun onFinishInputView(finishing: Boolean) {

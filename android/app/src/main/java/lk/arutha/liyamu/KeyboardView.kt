@@ -41,6 +41,7 @@ class Key(
 interface KeyListener {
     fun onKey(key: Key, shifted: Boolean, long: Boolean)
     fun onPick(index: Int)
+    fun onVoice()
 }
 
 /** The keyboard: a row of suggestions, then the keys. Drawn by hand, one view. */
@@ -54,6 +55,10 @@ class KeyboardView(context: Context) : View(context) {
     private var selected = 0
     private val candidateRects = ArrayList<RectF>()
     private var pressed: Key? = null
+    /** shows the microphone at the end of the suggestion row */
+    var voice = false
+        set(v) { field = v; invalidate() }
+    private val micRect = RectF()
     private var longDone = false
     private val handler = Handler(Looper.getMainLooper())
 
@@ -245,6 +250,8 @@ class KeyboardView(context: Context) : View(context) {
 
     private fun drawCandidates(c: Canvas) {
         candidateRects.clear()
+        val end = if (voice) width - stripH - 4 * dp else width.toFloat()
+        if (voice) drawMic(c)
         if (candidates.isEmpty()) {
             text.typeface = Typeface.DEFAULT
             text.textSize = 13 * dp
@@ -260,7 +267,8 @@ class KeyboardView(context: Context) : View(context) {
             text.typeface = if (w.any { it in '඀'..'෿' }) sinhala else Typeface.DEFAULT
             val tw = text.measureText(w) + 22 * dp
             val r = RectF(x, 6 * dp, x + tw, stripH - 4 * dp)
-            if (r.left > width) break
+            if (i > 0 && r.right > end) break
+            if (r.right > end) r.right = end
             candidateRects.add(r)
             if (i == selected) {
                 paint.color = accent
@@ -276,6 +284,24 @@ class KeyboardView(context: Context) : View(context) {
             }
             x += tw + 4 * dp
         }
+    }
+
+    /** A small microphone, drawn in lines so that it takes the colours of the theme. */
+    private fun drawMic(c: Canvas) {
+        micRect.set(width - stripH - 2 * dp, 0f, width - 2 * dp, stripH)
+        val cx = micRect.centerX()
+        val cy = micRect.centerY()
+        paint.color = specialBg
+        c.drawCircle(cx, cy, 17 * dp, paint)
+        paint.color = accent
+        c.drawRoundRect(cx - 3.2f * dp, cy - 10 * dp, cx + 3.2f * dp, cy + 2 * dp, 3.2f * dp, 3.2f * dp, paint)
+        paint.style = Paint.Style.STROKE
+        paint.strokeWidth = 1.8f * dp
+        paint.strokeCap = Paint.Cap.ROUND
+        c.drawArc(cx - 6.5f * dp, cy - 8 * dp, cx + 6.5f * dp, cy + 5.5f * dp, 0f, 180f, false, paint)
+        c.drawLine(cx, cy + 5.5f * dp, cx, cy + 9.5f * dp, paint)
+        c.drawLine(cx - 3.5f * dp, cy + 9.5f * dp, cx + 3.5f * dp, cy + 9.5f * dp, paint)
+        paint.style = Paint.Style.FILL
     }
 
     // ---- touch
@@ -299,6 +325,11 @@ class KeyboardView(context: Context) : View(context) {
         when (e.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 if (e.y < stripH) {
+                    if (voice && micRect.contains(e.x, e.y)) {
+                        performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                        listener?.onVoice()
+                        return true
+                    }
                     val i = candidateRects.indexOfFirst { it.contains(e.x, e.y) }
                     if (i >= 0) listener?.onPick(i)
                     return true

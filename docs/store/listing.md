@@ -24,6 +24,7 @@ Liyamu (ලියමු, "let's write") is a Sinhala keyboard that keeps what yo
 
 PRIVATE BY DESIGN
 • No internet permission. The app cannot send anything anywhere.
+• Voice typing: a microphone key opens your phone's own voice typing (Sinhala included). Liyamu itself has no microphone permission.
 • No account, no ads, no analytics, no tracking.
 • Nothing you type is stored. Passwords are never looked at.
 • Open source, so anyone can check.
