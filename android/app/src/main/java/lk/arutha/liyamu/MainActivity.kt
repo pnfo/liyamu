@@ -43,9 +43,11 @@ class MainActivity : Activity() {
     private fun px(v: Int) = (v * dp).toInt()
     private fun colour(id: Int) = getColor(id)
     private var layoutListener: SharedPreferences.OnSharedPreferenceChangeListener? = null
+    private var layoutListener2: SharedPreferences.OnSharedPreferenceChangeListener? = null
 
     override fun onDestroy() {
         prefs.p.unregisterOnSharedPreferenceChangeListener(layoutListener)
+        prefs.p.unregisterOnSharedPreferenceChangeListener(layoutListener2)
         super.onDestroy()
     }
 
@@ -100,6 +102,14 @@ class MainActivity : Activity() {
 
         card("Suggestions")
         switch("Word suggestions", "suggestions", true, "A row of words above the keys; tap one to take it. Space takes the first.")
+        switch("Learn from the words I pick", "learn", true, "A word you pick twice for the same letters is offered first from then on. Kept only on this phone.")
+        prefs.applyLearning(this)
+        layoutListener2 = SharedPreferences.OnSharedPreferenceChangeListener { _, key -> if (key == "learn") prefs.applyLearning(this) }
+        prefs.p.registerOnSharedPreferenceChangeListener(layoutListener2)
+        link("Forget what was learned") {
+            Engine.forgetLearned()
+            Toast.makeText(this, "Forgotten", Toast.LENGTH_SHORT).show()
+        }
         switch("Suggest Pali words", "paliWords", false, "Also offer words found only in Pali: ධම්මං, භික්ඛූනං.")
 
         card("Letters")
@@ -237,6 +247,19 @@ class MainActivity : Activity() {
         }, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = px(4); bottomMargin = px(6) })
     }
 
+    /** A quiet action inside a card: outlined, not filled. */
+    private fun link(s: String, action: (View) -> Unit) {
+        col.addView(TextView(this).apply {
+            text = s
+            textSize = 14f
+            setTextColor(colour(R.color.accent))
+            background = rounded(0, 12, colour(R.color.accent))
+            setPadding(px(14), px(8), px(14), px(8))
+            isClickable = true
+            setOnClickListener(action)
+        }, LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT).apply { topMargin = px(2); bottomMargin = px(10) })
+    }
+
     private fun switch(title: String, key: String, default: Boolean, example: String) {
         val states = arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf())
         col.addView(Switch(this).apply {
@@ -265,7 +288,7 @@ Helakuru keys — exact phonetic typing: a අ, aa ආ, A ඇ, th ත, t ට, dh
 
 English — plain letters, so you do not have to change keyboards.
 
-Suggestions: tap a word to take it. Space takes the highlighted one.
+Suggestions: tap a word to take it. Space takes the highlighted one. A word you pick twice for the same letters comes first from then on; this is kept only on your phone, and Settings can forget it or turn it off.
 
 Voice typing: the microphone opens your phone's own voice typing (Google voice typing), and you come back here when you finish. Choose Sinhala in its languages. The sound goes to that service, not to Liyamu, which cannot use the microphone or the internet.
 

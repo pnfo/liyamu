@@ -30,6 +30,8 @@ object Engine {
     @JvmStatic external fun commit(session: Long): Array<String>
     @JvmStatic external fun reset(session: Long)
     @JvmStatic external fun setShortcuts(utf8: ByteArray)
+    @JvmStatic external fun setLearning(pathUtf8: ByteArray, on: Boolean)
+    @JvmStatic external fun forgetLearned()
     @JvmStatic external fun warmUp()
 }
 
@@ -46,6 +48,11 @@ class Prefs(val p: SharedPreferences) {
     val touching get() = p.getBoolean("touching", false)
     val traditional get() = p.getBoolean("traditional", true)
     val shortcuts get() = p.getString("shortcuts", "") ?: ""
+    val learn get() = p.getBoolean("learn", true)
+
+    /** Tells the engine whether to learn from the words picked, and the private file that keeps them. */
+    fun applyLearning(context: android.content.Context) =
+        Engine.setLearning(java.io.File(context.filesDir, "learned.tsv").path.toByteArray(), learn)
 
     fun create() = Engine.create(layout.coerceAtMost(2), traditional, touching, suggestions, repaya, conjuncts, paliWords)
     fun apply(session: Long) = Engine.setOptions(session, layout.coerceAtMost(2), traditional, touching, suggestions, repaya, conjuncts, paliWords)

@@ -26,7 +26,7 @@ PRIVATE BY DESIGN
 • No internet permission. The app cannot send anything anywhere.
 • Voice typing: a microphone key opens your phone's own voice typing (Sinhala included). Liyamu itself has no microphone permission.
 • No account, no ads, no analytics, no tracking.
-• Nothing you type is stored. Passwords are never looked at.
+• Learns the words you pick, on your phone only: nothing you type goes anywhere, and you can switch it off or delete it. Passwords are never looked at.
 • Open source, so anyone can check.
 
 FREE, ALL OF IT
@@ -66,7 +66,7 @@ has no way to send it anywhere.
 පෞද්ගලිකත්වය මුලින්ම
 • අන්තර්ජාල අවසරයක් නැත. යෙදුමට කිසිවක් කොතැනකටවත් යැවිය නොහැක.
 • ගිණුම් නැත, දැන්වීම් නැත, ලුහුබැඳීම් නැත.
-• ඔබ ලියන කිසිවක් ගබඩා නොකෙරේ. මුරපද දෙස නොබලයි.
+• ඔබ තෝරන වචන ඔබේ දුරකථනයේ පමණක් මතක තබා ගනී: ලියන කිසිවක් කොතැනකටවත් නොයයි; එය නවතා දැමීමට හෝ මකා දැමීමට හැකිය. මුරපද දෙස නොබලයි.
 • විවෘත මූලාශ්‍ර (open source) බැවින් ඕනෑම කෙනෙකුට පරීක්ෂා කළ හැක.
 
 සියල්ල නොමිලේ
@@ -121,7 +121,8 @@ Liyamu for macOS – a private, free Sinhala keyboard
 • Types Unicode, or FM / Isi codes for documents in the old fonts
 • Real-word suggestions with typo and shorthand correction; → ← to choose, Space to take
 • Settings and Help window: repaya, Pali joined and touching letters, Pali words, your own shortcuts
-• No network access, nothing stored
+• Learns the words you pick, on this Mac only (can be turned off or deleted)
+• No network access
 
 Install: open the .pkg, then add Liyamu in System Settings › Keyboard › Text Input › Input Sources › + ›
 Sinhala. If it is not listed, log out and in once.

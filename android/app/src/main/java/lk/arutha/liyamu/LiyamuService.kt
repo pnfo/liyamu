@@ -27,6 +27,7 @@ class LiyamuService : InputMethodService(), KeyListener, SharedPreferences.OnSha
         prefs.p.registerOnSharedPreferenceChangeListener(this)
         session = prefs.create()
         Engine.setShortcuts(prefs.shortcuts.toByteArray())
+        prefs.applyLearning(this)
         Thread { Engine.warmUp() }.start()
     }
 
@@ -39,6 +40,7 @@ class LiyamuService : InputMethodService(), KeyListener, SharedPreferences.OnSha
 
     override fun onSharedPreferenceChanged(p: SharedPreferences?, key: String?) {
         if (key == "shortcuts") Engine.setShortcuts(prefs.shortcuts.toByteArray())
+        if (key == "learn") prefs.applyLearning(this)
         show(Response(prefs.apply(session)))
         view?.setLayout(prefs.layout)
     }

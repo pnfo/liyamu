@@ -2,6 +2,7 @@
 //! the chosen output, at a word boundary.
 
 use crate::chars::{is_word_char, style, HAL, ZWJ};
+use crate::learn;
 use crate::lexicon::user_shortcut;
 use crate::suggest;
 use crate::encode::Encoding;
@@ -104,6 +105,9 @@ impl Session {
     pub fn pick(&mut self, i: usize) -> Response {
         match self.candidates.get(i).cloned() {
             Some(word) => {
+                if i > 0 && !self.tokens.is_empty() {
+                    learn::record(&self.keys, &word);
+                }
                 self.tokens.clear();
                 self.keys.clear();
                 self.remember(&word);
@@ -220,7 +224,7 @@ impl Session {
 
     fn composing(&mut self) -> Response {
         let latin = self.tokens.concat();
-        let (word, candidates) = match self.opts.layout {
+        let (mut word, mut candidates) = match self.opts.layout {
             Layout::Singlish if !latin.is_empty() && self.opts.suggest => {
                 // judged as a whole word, so what is shown is what a space commits
                 let candidates = suggest::singlish(&latin, &self.prev, self.opts.pali_words);
@@ -241,6 +245,11 @@ impl Session {
                 (candidates.first().cloned().unwrap_or(word), candidates)
             }
         };
+        // what the user picked for these keys before comes first, after their own shortcuts
+        if self.opts.suggest && !candidates.is_empty() {
+            learn::apply(&self.keys, &mut candidates, user_shortcut(&self.keys).len());
+            word = candidates[0].clone();
+        }
         self.candidates = candidates.clone();
         self.selected = 0;
         // a word part-way through may not be writable yet (ක්‍ before its ෂ); only commits report losses
@@ -271,7 +280,12 @@ impl Session {
             String::new()
         } else {
             match self.candidates.get(self.selected) {
-                Some(w) => w.clone(),
+                Some(w) => {
+                    if self.selected > 0 {
+                        learn::record(&self.keys, w);
+                    }
+                    w.clone()
+                }
                 None => self.render(true),
             }
         };

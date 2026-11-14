@@ -42,6 +42,8 @@ is then written in that font's codes, so documents in FM Abhaya and the like can
 
 PALI
 Letters tab: repaya, joined letters and touching letters, as Pali books print them.
+A word you pick twice for the same letters is offered first from then on. This is kept in a file on this Mac only; the Typing tab can turn it off or forget it.
+
 Typing tab: “Suggest Pali words” adds Pali-only words to the suggestions.
 
 IF IT DOES NOT TYPE

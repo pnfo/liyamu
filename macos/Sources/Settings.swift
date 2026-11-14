@@ -52,6 +52,22 @@ final class Settings {
         set { d.set(newValue, forKey: "paliWords"); version += 1 }
     }
 
+    /// learn from the suggestions picked; kept in a file on this Mac only
+    var learn: Bool {
+        get { d.object(forKey: "learn") as? Bool ?? true }
+        set { d.set(newValue, forKey: "learn"); applyLearning() }
+    }
+
+    static let learnedFile: URL = shortcutsFile.deletingLastPathComponent().appendingPathComponent("learned.tsv")
+
+    func applyLearning() {
+        liyamu_set_learning(Settings.learnedFile.path, learn)
+    }
+
+    func forgetLearned() {
+        liyamu_forget_learned()
+    }
+
     func options() -> LiyamuOptions {
         LiyamuOptions(layout: layout, output: UInt32(output.rawValue),
                       order: traditionalOrder ? 0 : 1, pali: pali, suggest: suggestions,

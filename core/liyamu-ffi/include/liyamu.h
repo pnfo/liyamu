@@ -59,6 +59,10 @@ void liyamu_session_reset(LiyamuSession *s);
 void liyamu_warm_up(void);
 /* the user's own shortcuts, for all sessions: lines of keys=words; NULL for none */
 void liyamu_set_shortcuts(const char *text);
+/* learning from the suggestions picked, for all sessions; path: the file that keeps it (NULL: as before) */
+void liyamu_set_learning(const char *path, bool on);
+/* deletes everything learned, in memory and the file */
+void liyamu_forget_learned(void);
 void liyamu_response_free(LiyamuResponse *r);
 
 #ifdef __cplusplus

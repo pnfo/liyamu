@@ -18,8 +18,9 @@ A keyboard sees everything you type, passwords included. So:
 
 - **Nothing leaves the device.** The keyboard has no network code at all: no accounts, no sync, no
   analytics, no crash reports, no ads. Suggestions come from word lists built into the app.
-- **Nothing you type is stored.** (If learning from your own typing is added, it will be a file that stays
-  on your device, off in password fields, with a switch and a delete button.)
+- **Nothing you type is kept by anyone else.** The only thing remembered is which suggestion you picked for
+  which letters, so that it comes first next time: a small file that stays on your device, never in
+  password fields, with a switch to turn it off and a button to delete it.
 - **Open source**, so the two points above can be checked rather than believed.
 - **Free, all of it.** No paid features, no premium tier, no strings attached.
 

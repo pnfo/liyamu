@@ -76,6 +76,19 @@ JNIEXPORT void JNICALL FN(setShortcuts)(JNIEnv *env, jclass c, jbyteArray utf8) 
     free(text);
 }
 
+JNIEXPORT void JNICALL FN(setLearning)(JNIEnv *env, jclass c, jbyteArray utf8, jboolean on) {
+    jsize n = (*env)->GetArrayLength(env, utf8);
+    char *path = malloc((size_t)n + 1);
+    (*env)->GetByteArrayRegion(env, utf8, 0, n, (jbyte *)path);
+    path[n] = 0;
+    liyamu_set_learning(path, on);
+    free(path);
+}
+
+JNIEXPORT void JNICALL FN(forgetLearned)(JNIEnv *env, jclass c) {
+    liyamu_forget_learned();
+}
+
 JNIEXPORT void JNICALL FN(warmUp)(JNIEnv *env, jclass c) {
     liyamu_warm_up();
 }

@@ -164,6 +164,22 @@ pub unsafe extern "C" fn liyamu_set_shortcuts(text: *const c_char) {
     liyamu_core::lexicon::set_user_shortcuts(&text);
 }
 
+/// Learning from the suggestions the user picks, for all sessions. `path` is the file that keeps what was
+/// learned (NULL: keep the one given before); it never leaves the device.
+/// # Safety
+/// `path` must be NULL or a NUL-terminated UTF-8 string.
+#[no_mangle]
+pub unsafe extern "C" fn liyamu_set_learning(path: *const c_char, on: bool) {
+    let path = if path.is_null() { None } else { Some(CStr::from_ptr(path).to_string_lossy().into_owned()) };
+    liyamu_core::learn::configure(path.as_deref(), on);
+}
+
+/// Deletes everything learned, in memory and the file.
+#[no_mangle]
+pub extern "C" fn liyamu_forget_learned() {
+    liyamu_core::learn::forget();
+}
+
 /// Loads the word lists now (a few hundred milliseconds) instead of at the first key. Call it on a
 /// background thread when the keyboard starts.
 #[no_mangle]

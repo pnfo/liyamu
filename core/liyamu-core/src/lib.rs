@@ -7,6 +7,7 @@
 pub mod chars;
 pub mod encode;
 pub mod layout;
+pub mod learn;
 pub mod lexicon;
 mod session;
 pub mod sim;

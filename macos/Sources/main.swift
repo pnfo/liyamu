@@ -17,6 +17,7 @@ guard let server = IMKServer(name: connectionName, bundleIdentifier: Bundle.main
 }
 Fonts.register()
 Settings.shared.loadShortcuts(force: true)
+Settings.shared.applyLearning()
 
 /// Opening Liyamu.app (Finder, Spotlight) while it runs as the input method shows the settings window.
 final class AppDelegate: NSObject, NSApplicationDelegate {

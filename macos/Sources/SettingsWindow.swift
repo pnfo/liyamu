@@ -126,6 +126,9 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
             heading("Suggestions"),
             check("Word suggestions", \.suggestions,
                   "A row of words under what you type. → ← choose, Space takes the highlighted one, 1–9 take that one."),
+            check("Learn from the words I pick", \.learn,
+                  "A word you pick twice for the same letters is offered first from then on. Kept only on this Mac."),
+            NSButton(title: "Forget what was learned", target: self, action: #selector(forgetLearned(_:))),
             check("Suggest Pali words", \.paliWords,
                   "Also offer words found only in Pali: ධම්මං, භික්ඛූනං. For typing suttas and chanting."),
         ])
@@ -186,6 +189,12 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
 
     @objc private func toggled(_ sender: NSButton) {
         Settings.shared[keyPath: checks[sender.tag].1] = sender.state == .on
+    }
+
+    @objc private func forgetLearned(_ sender: NSButton) {
+        Settings.shared.forgetLearned()
+        sender.title = "Forgotten"
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { sender.title = "Forget what was learned" }
     }
 
     @objc private func layoutChosen(_ sender: NSPopUpButton) {
