@@ -55,6 +55,8 @@ LiyamuResponse *liyamu_session_key(LiyamuSession *s, uint32_t kind, uint32_t ch,
 LiyamuResponse *liyamu_session_commit(LiyamuSession *s);
 LiyamuResponse *liyamu_session_pick(LiyamuSession *s, uint32_t index); /* commit a candidate */
 void liyamu_session_reset(LiyamuSession *s);
+/* loads the word lists now instead of at the first key; call on a background thread at start */
+void liyamu_warm_up(void);
 /* the user's own shortcuts, for all sessions: lines of keys=words; NULL for none */
 void liyamu_set_shortcuts(const char *text);
 void liyamu_response_free(LiyamuResponse *r);

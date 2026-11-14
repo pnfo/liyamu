@@ -36,6 +36,7 @@ data/fixtures       20,000 book words converted by pitaka.lk, to check the Rust 
 data/lexicon        word and word-pair counts, everyday words, names, places, dictionary and Pali words, shortcuts
 tools/              export-encodings.mjs, build-corpus.mjs, build-lexicon.mjs, build-names.mjs
 macos/              the macOS input method and its settings window (Swift, InputMethodKit)
+android/            the Android keyboard and its settings app (Kotlin)
 design/logo/        logo concepts and the script that draws them
 ```
 
@@ -73,6 +74,22 @@ Suggestions appear in a bar under the word: **→ / ↓** and **← / ↑** move
 highlighted word (with a space), **Enter** commits it without a new line, **1–9** or a click commit that one. Easy Singlish suggests
 readings of the word; Wijesekara and Helakuru keys suggest common words that start with what was typed.
 **Word suggestions** in the menu turns them off for all layouts.
+
+### Android
+
+```sh
+android/build-rust.sh                      # the engine for Android (needs rustup with the Android targets)
+(cd android && ./gradlew assembleDebug)    # android/app/build/outputs/apk/debug/app-debug.apk
+```
+
+`android/` is the keyboard (an input method service drawing its own keys, with the suggestion row above
+them) and the app that holds its settings, shortcuts and help. The engine is the same Rust library, reached
+through a small C bridge (`app/src/main/cpp/liyamu_jni.c`). The app asks for no permissions at all. Password,
+e-mail and web-address fields get plain letters and never reach the engine. On the emulator, run
+`adb shell settings put secure show_ime_with_hard_keyboard 1` or the keyboard stays hidden.
+
+Store texts and screenshots: [docs/store/listing.md](docs/store/listing.md). Privacy policy:
+[PRIVACY.md](PRIVACY.md).
 
 Key notation in tests and the CLI: `␣` Space, `⏎` Enter, `⌫` Backspace, `←→↑↓` arrows, `⌥x` AltGr+x.
 

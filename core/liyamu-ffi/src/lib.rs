@@ -164,6 +164,13 @@ pub unsafe extern "C" fn liyamu_set_shortcuts(text: *const c_char) {
     liyamu_core::lexicon::set_user_shortcuts(&text);
 }
 
+/// Loads the word lists now (a few hundred milliseconds) instead of at the first key. Call it on a
+/// background thread when the keyboard starts.
+#[no_mangle]
+pub extern "C" fn liyamu_warm_up() {
+    let _ = liyamu_core::suggest::singlish("ka", &[], true);
+}
+
 /// Drops the word being composed.
 /// # Safety
 /// `s` must be a live session.
