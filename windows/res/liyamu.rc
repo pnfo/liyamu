@@ -1,0 +1,27 @@
+// Icon and version for the keyboard DLL and the settings program
+#include <winver.h>
+1 ICON "liyamu.ico"
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION     VERSION_COMMAS
+PRODUCTVERSION  VERSION_COMMAS
+FILEOS          VOS_NT_WINDOWS32
+FILETYPE        VFT_DLL
+BEGIN
+  BLOCK "StringFileInfo"
+  BEGIN
+    BLOCK "040904B0"
+    BEGIN
+      VALUE "CompanyName",      "Path Nirvana Foundation"
+      VALUE "FileDescription",  "Liyamu Sinhala keyboard"
+      VALUE "FileVersion",      VERSION_DOTS
+      VALUE "LegalCopyright",   "Path Nirvana Foundation, GPL-3.0-or-later"
+      VALUE "ProductName",      "Liyamu"
+      VALUE "ProductVersion",   VERSION_DOTS
+    END
+  END
+  BLOCK "VarFileInfo"
+  BEGIN
+    VALUE "Translation", 0x409, 1200
+  END
+END

@@ -146,6 +146,27 @@ impl Session {
         self.prev.clear();
     }
 
+    /// A word is being composed.
+    pub fn is_composing(&self) -> bool {
+        !self.tokens.is_empty()
+    }
+
+    /// Whether `key` would return `handled: true`, without changing anything. Windows asks this before it
+    /// sends the key (ITfKeyEventSink::OnTestKeyDown).
+    pub fn handles(&self, key: Key, mods: Mods) -> bool {
+        if mods.ctrl {
+            return false;
+        }
+        match key {
+            Key::Char(_) | Key::Space => true,
+            Key::Backspace => !self.tokens.is_empty(),
+            Key::Left | Key::Up => self.choosing() && self.selected > 0,
+            Key::Right | Key::Down => self.choosing(),
+            Key::Enter => self.choosing() && self.selected > 0,
+            Key::Tab | Key::Escape | Key::Other => false,
+        }
+    }
+
     pub fn key(&mut self, key: Key, mods: Mods) -> Response {
         if mods.ctrl {
             return self.commit_word("", false);

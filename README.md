@@ -38,6 +38,7 @@ data/lexicon        word and word-pair counts, everyday words, names, places, di
 tools/              export-encodings.mjs, build-corpus.mjs, build-lexicon.mjs, build-names.mjs
 macos/              the macOS input method and its settings window (Swift, InputMethodKit)
 android/            the Android keyboard and its settings app (Kotlin)
+windows/            the Windows keyboard (TSF text service DLL, Rust), its settings program and installer
 design/logo/        the icon set and the script that draws it
 ```
 
@@ -75,6 +76,21 @@ Suggestions appear in a bar under the word: **→ / ↓** and **← / ↑** move
 highlighted word (with a space), **Enter** commits it without a new line, **1–9** or a click commit that one. Easy Singlish suggests
 readings of the word; Wijesekara and Helakuru keys suggest common words that start with what was typed.
 **Word suggestions** in the menu turns them off for all layouts.
+
+### Windows
+
+```sh
+windows/build.sh     # windows/dist/LiyamuSetup-<version>.exe, cross-compiled on this Mac
+```
+
+A Text Services Framework text service in Rust (`windows/src`), registered as a keyboard under Sinhala
+(si-LK). One DLL per architecture: x64 and x86 (for 32-bit apps such as older Office), and ARM64 on ARM
+PCs. The installer (NSIS) registers them with regsvr32 and adds Liyamu to the user's keyboards
+(`liyamu-settings.exe --add-keyboard`); **Windows key + Space** switches to it. Its taskbar button opens a
+menu for the layout and the output; **liyamu-settings.exe** has the other options, the user's shortcuts
+and help. Options are in `HKCU\Software\Liyamu`; shortcuts and learned words in `%APPDATA%\Liyamu`.
+Builds need `cargo install cargo-xwin`, the `*-pc-windows-msvc` rustup targets and `brew install llvm lld
+makensis`. The installer is unsigned; Store releases need it signed.
 
 ### Android
 

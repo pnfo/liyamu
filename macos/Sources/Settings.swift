@@ -10,7 +10,8 @@ final class Settings {
 
     /// 0 Wijesekara, 1 Easy Singlish, 2 Helakuru keys
     var layout: UInt32 {
-        get { UInt32(max(0, min(2, d.integer(forKey: "layout")))) }
+        // Easy Singlish until one is chosen, as on Android and Windows
+        get { UInt32(max(0, min(2, d.object(forKey: "layout") as? Int ?? 1))) }
         set { d.set(Int(newValue), forKey: "layout"); version += 1 }
     }
 
