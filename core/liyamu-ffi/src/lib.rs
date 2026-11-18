@@ -115,6 +115,15 @@ pub unsafe extern "C" fn liyamu_session_set_options(s: *mut Session, opts: *cons
     response((*s).set_options(options(&*opts)))
 }
 
+/// Next-word suggestions (off by default): after a word and a space, or a picked suggestion, the response
+/// has the words likely to come next as candidates and no preedit; `liyamu_session_pick` takes one.
+/// # Safety
+/// `s` must be a live session.
+#[no_mangle]
+pub unsafe extern "C" fn liyamu_session_set_predict(s: *mut Session, on: bool) {
+    (*s).set_predict(on)
+}
+
 /// `kind` is one of the LIYAMU_KEY_* values; `ch` is the US-QWERTY character for LIYAMU_KEY_CHAR.
 /// # Safety
 /// `s` must be a live session.
@@ -185,6 +194,7 @@ pub extern "C" fn liyamu_forget_learned() {
 #[no_mangle]
 pub extern "C" fn liyamu_warm_up() {
     let _ = liyamu_core::suggest::singlish("ka", &[], true);
+    let _ = liyamu_core::suggest::next_words("මම", true);
 }
 
 /// Drops the word being composed.

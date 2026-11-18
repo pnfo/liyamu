@@ -49,6 +49,11 @@ impl Context {
         }
     }
 
+    /// How often `word` followed `prev` in the books (0: never, or too seldom to have been kept).
+    pub fn pair(&self, prev: &str, word: &str) -> u32 {
+        self.value(&[prev, " ", word])
+    }
+
     /// P(word | previous word), or the word's own probability when there is no usable context.
     pub fn probability(&self, prev: Option<&str>, word: &str) -> f64 {
         let lex = Lexicon::books();

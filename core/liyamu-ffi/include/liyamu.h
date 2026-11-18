@@ -51,6 +51,9 @@ typedef struct LiyamuSession LiyamuSession;
 LiyamuSession *liyamu_session_new(const LiyamuOptions *opts); /* NULL = defaults */
 void liyamu_session_free(LiyamuSession *s);
 LiyamuResponse *liyamu_session_set_options(LiyamuSession *s, const LiyamuOptions *opts);
+/* next-word suggestions (off by default): after a word and a space, or a picked suggestion, the response has
+ * the words likely to come next as candidates and no preedit; liyamu_session_pick takes one */
+void liyamu_session_set_predict(LiyamuSession *s, bool on);
 LiyamuResponse *liyamu_session_key(LiyamuSession *s, uint32_t kind, uint32_t ch, bool altgr, bool ctrl);
 LiyamuResponse *liyamu_session_commit(LiyamuSession *s);
 LiyamuResponse *liyamu_session_pick(LiyamuSession *s, uint32_t index); /* commit a candidate */

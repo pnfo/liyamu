@@ -3,11 +3,12 @@
 // outside the repo). The app must already exist in the console: the API cannot create one.
 //   PLAY_KEY=/path/key.json node tools/play.mjs listing [--dry]
 //   PLAY_KEY=/path/key.json node tools/play.mjs release [--dry]     TRACK=internal (default) | production …
+//   PLAY_KEY=/path/key.json VERSION=1 node tools/play.mjs promote   an uploaded version to TRACK (production)
 //       the bundle: cd android && ABIS="arm64-v8a armeabi-v7a x86_64" ./build-rust.sh &&
 //                   ./gradlew bundleRelease -Pabis=arm64-v8a,armeabi-v7a,x86_64
 // --dry: listing prints what would be sent; release uploads the bundle and then drops the edit.
 import { createSign } from 'node:crypto'
-import { readFileSync, readdirSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -103,10 +104,21 @@ if (command == 'listing') {
     const bundle = await api('POST', `${e}/bundles`, { bytes: readFileSync(aab), type: 'application/octet-stream' })
     console.log('bundle', bundle.versionCode)
     // a draft until the app's first review is through; the console rolls it out
-    await api('PUT', `${e}/tracks/${track}`, { track, releases: [{ status: process.env.STATUS || 'draft', versionCodes: [String(bundle.versionCode)] }] })
+    // what is new, from docs/store/whatsnew-<language>.txt (500 characters each at most)
+    const releaseNotes = Object.keys(listing).filter(l => existsSync(join(ROOT, `docs/store/whatsnew-${l}.txt`)))
+      .map(language => ({ language, text: readFileSync(join(ROOT, `docs/store/whatsnew-${language}.txt`), 'utf8').trim() }))
+    for (const n of releaseNotes) if ([...n.text].length > 500) throw new Error(`${n.language}: what's new over 500`)
+    await api('PUT', `${e}/tracks/${track}`, { track, releases: [{ status: process.env.STATUS || 'draft', versionCodes: [String(bundle.versionCode)], releaseNotes }] })
     if (dry) { console.log('dry run: edit dropped'); return false }
     console.log(track)
   })
+} else if (command == 'promote') {
+  // a version already uploaded goes to another track: VERSION=1 TRACK=production STATUS=completed
+  const track = process.env.TRACK || 'production'
+  await edit(async e => {
+    await api('PUT', `${e}/tracks/${track}`, { track, releases: [{ status: process.env.STATUS || 'completed', versionCodes: [String(process.env.VERSION)] }] })
+    console.log(track, process.env.VERSION)
+  })
 } else {
-  console.log('node tools/play.mjs listing|release [--dry]')
+  console.log('node tools/play.mjs listing|release|promote [--dry]')
 }

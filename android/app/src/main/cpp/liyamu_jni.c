@@ -50,6 +50,10 @@ JNIEXPORT jobjectArray JNICALL FN(setOptions)(JNIEnv *env, jclass c, jlong s, ji
     return response(env, liyamu_session_set_options((LiyamuSession *)(intptr_t)s, &o));
 }
 
+JNIEXPORT void JNICALL FN(setPredict)(JNIEnv *env, jclass c, jlong s, jboolean on) {
+    liyamu_session_set_predict((LiyamuSession *)(intptr_t)s, on);
+}
+
 JNIEXPORT jobjectArray JNICALL FN(key)(JNIEnv *env, jclass c, jlong s, jint kind, jint ch, jboolean altgr) {
     return response(env, liyamu_session_key((LiyamuSession *)(intptr_t)s, (uint32_t)kind, (uint32_t)ch, altgr, false));
 }

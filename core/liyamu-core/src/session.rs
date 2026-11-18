@@ -69,11 +69,13 @@ pub struct Session {
     selected: usize,
     /// last character committed, for opening / closing quotes in legacy fonts
     last: Option<char>,
+    /// after a word and a space, offer the words likely to come next (phone keyboards)
+    predict: bool,
 }
 
 impl Session {
     pub fn new(opts: Options) -> Session {
-        Session { opts, tokens: Vec::new(), keys: String::new(), prev: Vec::new(), candidates: Vec::new(), selected: 0, last: None }
+        Session { opts, tokens: Vec::new(), keys: String::new(), prev: Vec::new(), candidates: Vec::new(), selected: 0, last: None, predict: false }
     }
 
     pub fn options(&self) -> &Options {
@@ -84,6 +86,24 @@ impl Session {
     pub fn set_options(&mut self, opts: Options) -> Response {
         let r = self.commit_word("", true);
         self.opts = opts;
+        r
+    }
+
+    /// Next-word suggestions: after a word and a space (or a picked suggestion) the response carries the words
+    /// likely to come next as candidates, with no preedit; `pick` takes one. Which word the user writes after
+    /// which is then learned too, when learning is on.
+    pub fn set_predict(&mut self, on: bool) {
+        self.predict = on;
+    }
+
+    /// The response with the words likely to come next, when the shell asked for them.
+    fn with_next(&mut self, mut r: Response) -> Response {
+        if self.predict && self.opts.suggest {
+            if let Some(prev) = self.prev.last() {
+                self.candidates = suggest::next_words(prev, self.opts.pali_words);
+                r.candidates = self.candidates.iter().map(|c| self.styled(c)).collect();
+            }
+        }
         r
     }
 
@@ -111,7 +131,8 @@ impl Session {
                 self.tokens.clear();
                 self.keys.clear();
                 self.remember(&word);
-                self.commit_text(word)
+                let r = self.commit_text(word);
+                self.with_next(r)
             }
             None => Response { handled: false, ..Default::default() },
         }
@@ -121,11 +142,17 @@ impl Session {
     pub fn commit(&mut self) -> Response {
         let r = self.commit_word("", true);
         self.prev.clear(); // what comes next may be somewhere else
+        learn::flush();
         r
     }
 
     /// Adds a committed word to the context that suggestions for the next word use.
     pub fn remember(&mut self, word: &str) {
+        if self.predict {
+            if let Some(prev) = self.prev.last() {
+                learn::record_next(prev, word);
+            }
+        }
         if self.prev.len() == CONTEXT {
             self.prev.remove(0);
         }
@@ -171,9 +198,15 @@ impl Session {
         if mods.ctrl {
             return self.commit_word("", false);
         }
+        if self.tokens.is_empty() {
+            self.candidates.clear(); // next-word suggestions end with the next key
+        }
         match key {
             Key::Char(c) => self.char_key(c, mods.altgr),
-            Key::Space => self.commit_word(" ", true),
+            Key::Space => {
+                let r = self.commit_word(" ", true);
+                self.with_next(r)
+            }
             Key::Backspace => {
                 if self.tokens.pop().is_some() {
                     self.keys.pop();

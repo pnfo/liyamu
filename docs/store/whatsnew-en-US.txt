@@ -1,0 +1,6 @@
+• Keys the size of Gboard's, with an emoji key and numbers on a long press
+• The globe key changes between Sinhala and English; the Sinhala layout is the one chosen in the settings
+• After each word, the words likely to come next (learned on your phone only)
+• Faster keys, and two-thumb typing
+• A gear beside the microphone opens the settings
+• Wijesekara: vowel signs shown clearly, without the dotted circle

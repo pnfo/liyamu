@@ -26,7 +26,7 @@ PRIVATE BY DESIGN
 • No internet permission. The app cannot send anything anywhere.
 • Voice typing: a microphone key opens your phone's own voice typing (Sinhala included). Liyamu itself has no microphone permission.
 • No account, no ads, no analytics, no tracking.
-• Learns the words you pick, on your phone only: nothing you type goes anywhere, and you can switch it off or delete it. Passwords are never looked at.
+• Learns the words you pick and the words you usually write next, on your phone only: nothing you type goes anywhere, and you can switch it off or delete it. Passwords are never looked at.
 • Open source, so anyone can check.
 
 FREE, ALL OF IT
@@ -36,7 +36,8 @@ TYPE THE WAY YOU LIKE
 • Easy Singlish – type as you would in a chat and pick the word: mama gedara yanawa → මම ගෙදර යනවා
 • Wijesekara – the standard Sri Lankan layout, with the extra letters on a long press
 • Helakuru keys – exact phonetic typing with the keys you already know
-• English – plain letters without changing keyboards
+• English – the globe key changes between Sinhala and English, without changing keyboards
+• Emoji, numbers on a long press, and next-word suggestions after every word
 
 SUGGESTIONS THAT ARE REAL WORDS
 • Only real Sinhala words are offered, from a list of about 146,000

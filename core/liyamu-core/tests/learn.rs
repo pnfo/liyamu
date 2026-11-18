@@ -54,3 +54,28 @@ fn a_word_picked_twice_comes_first_until_forgotten() {
     assert_eq!(type_keys(&mut s, "compute"), before);
     assert!(!file.exists());
 }
+
+#[test]
+fn after_a_space_the_next_words_are_offered() {
+    let mut s = Session::new(Options { layout: Layout::Singlish, ..Default::default() });
+    // not asked for: nothing after the space (the desktop keyboards)
+    type_keys(&mut s, "mama");
+    assert!(s.key(Key::Space, Mods::default()).candidates.is_empty());
+    s.reset();
+
+    s.set_predict(true);
+    type_keys(&mut s, "mama");
+    let r = s.key(Key::Space, Mods::default());
+    assert_eq!(r.commit, "මම ");
+    assert!(r.preedit.is_empty());
+    assert!(r.candidates.len() >= 3, "{:?}", r.candidates);
+    // one is picked, and the words after it are offered in turn
+    let word = r.candidates[1].clone();
+    let r = s.pick(1);
+    assert_eq!(r.commit, word);
+    assert!(!r.candidates.is_empty());
+    // they end with the next key; Backspace then goes to the app
+    let r = s.key(Key::Backspace, Mods::default());
+    assert!(!r.handled && r.candidates.is_empty());
+    assert!(!s.pick(0).handled);
+}

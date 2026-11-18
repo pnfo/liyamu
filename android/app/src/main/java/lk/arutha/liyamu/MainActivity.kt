@@ -42,11 +42,9 @@ class MainActivity : Activity() {
     private val dp get() = resources.displayMetrics.density
     private fun px(v: Int) = (v * dp).toInt()
     private fun colour(id: Int) = getColor(id)
-    private var layoutListener: SharedPreferences.OnSharedPreferenceChangeListener? = null
     private var layoutListener2: SharedPreferences.OnSharedPreferenceChangeListener? = null
 
     override fun onDestroy() {
-        prefs.p.unregisterOnSharedPreferenceChangeListener(layoutListener)
         prefs.p.unregisterOnSharedPreferenceChangeListener(layoutListener2)
         super.onDestroy()
     }
@@ -95,14 +93,11 @@ class MainActivity : Activity() {
         group.check(100 + prefs.layout)
         group.setOnCheckedChangeListener { _, id -> if (prefs.layout != id - 100) prefs.layout = id - 100 }
         col.addView(group)
-        // the 🌐 key changes the layout too
-        layoutListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key -> if (key == "layout") group.check(100 + prefs.layout) }
-        prefs.p.registerOnSharedPreferenceChangeListener(layoutListener)
-        note("The globe key on the keyboard also changes the layout.")
+        note("The globe key on the keyboard changes between Sinhala, in this layout, and English. Hold it to change to another keyboard.")
 
         card("Suggestions")
-        switch("Word suggestions", "suggestions", true, "A row of words above the keys; tap one to take it. Space takes the first.")
-        switch("Learn from the words I pick", "learn", true, "A word you pick twice for the same letters is offered first from then on. Kept only on this phone.")
+        switch("Word suggestions", "suggestions", true, "A row of words above the keys; tap one to take it. Space takes the first. After a space, the words likely to come next.")
+        switch("Learn from what I write", "learn", true, "A word you pick twice for the same letters is offered first from then on, and a word you often write after another is offered after it. Kept only on this phone.")
         prefs.applyLearning(this)
         layoutListener2 = SharedPreferences.OnSharedPreferenceChangeListener { _, key -> if (key == "learn") prefs.applyLearning(this) }
         prefs.p.registerOnSharedPreferenceChangeListener(layoutListener2)
@@ -286,9 +281,11 @@ Wijesekara — the standard Sri Lankan layout. ⇧ shows the second letters. Hol
 
 Helakuru keys — exact phonetic typing: a අ, aa ආ, A ඇ, th ත, t ට, dh ද, d ඩ, sh ශ, x ං
 
-English — plain letters, so you do not have to change keyboards.
+English — the globe key changes between Sinhala and plain English letters, so you do not have to change keyboards. Hold the globe key for the phone's other keyboards.
 
-Suggestions: tap a word to take it. Space takes the highlighted one. A word you pick twice for the same letters comes first from then on; this is kept only on your phone, and Settings can forget it or turn it off.
+Numbers and emoji — hold a key of the top row for its number. The face key opens the emoji.
+
+Suggestions: tap a word to take it. Space takes the highlighted one. After a space the words likely to come next are shown. A word you pick twice for the same letters comes first from then on, and a word you often write after another is offered after it; this is kept only on your phone, and Settings can forget it or turn it off.
 
 Voice typing: the microphone opens your phone's own voice typing (Google voice typing), and you come back here when you finish. Choose Sinhala in its languages. The sound goes to that service, not to Liyamu, which cannot use the microphone or the internet.
 

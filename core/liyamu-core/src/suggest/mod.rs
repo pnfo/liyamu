@@ -168,6 +168,40 @@ pub fn singlish(latin: &str, prev: &[String], pali: bool) -> Vec<String> {
     out
 }
 
+/// Words looked at for what may come next: the most frequent of the lexicon.
+const NEXT_POOL: usize = 20000;
+
+/// What may come after the word `prev`, likeliest first: what the user usually writes after it, then what
+/// follows it most often in the books. Empty when nothing is known to follow it.
+pub fn next_words(prev: &str, pali: bool) -> Vec<String> {
+    static POOL: std::sync::OnceLock<Vec<u32>> = std::sync::OnceLock::new();
+    let (lex, ctx) = (Lexicon::books(), Context::get());
+    let (words, counts) = lex.entries();
+    let mut out = crate::learn::next(prev);
+    out.truncate(MAX);
+    if lex.count(prev) > 0 {
+        let pool = POOL.get_or_init(|| {
+            let mut ids: Vec<u32> = (0..words.len() as u32).collect();
+            ids.sort_by(|a, b| counts[*b as usize].cmp(&counts[*a as usize]));
+            ids.truncate(NEXT_POOL);
+            ids
+        });
+        // the pool is in order of frequency, so a stable sort leaves the commoner word first among equals
+        let mut found: Vec<(u32, u32)> = pool.iter().map(|id| (*id, ctx.pair(prev, &words[*id as usize]))).filter(|(_, n)| *n > 0).collect();
+        found.sort_by(|a, b| b.1.cmp(&a.1));
+        for (id, _) in found {
+            let w = &words[id as usize];
+            if out.len() >= MAX {
+                break;
+            }
+            if w != prev && (pali || !is_pali(w)) && !out.contains(w) {
+                out.push(w.clone());
+            }
+        }
+    }
+    out
+}
+
 /// Wijesekara and Helakuru keys: the word as typed, then likely words that start with `prefix` (the word
 /// without a still-open hal). Empty when there is nothing to suggest.
 pub fn completions(word: &str, prefix: &str, prev: &[String], pali: bool) -> Vec<String> {

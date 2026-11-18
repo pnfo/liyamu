@@ -7,13 +7,13 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RectF
 import android.graphics.Typeface
-import android.os.Build
+import android.graphics.drawable.Drawable
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.view.HapticFeedbackConstants
 import android.view.MotionEvent
 import android.view.View
-import android.view.WindowInsets
 
 /** A key: what it shows and what it does. */
 class Key(
@@ -22,8 +22,10 @@ class Key(
     val ch: Char = 0.toChar(),
     val action: Int = TYPE,
     val weight: Float = 1f,
-    /** small label in the corner: what a long press types (the layout's AltGr letter) */
+    /** small label in the corner: what a long press types */
     val alt: String = "",
+    /** the long press inserts `alt` as it is (a digit); otherwise it is the layout's AltGr letter */
+    val altText: Boolean = false,
 ) {
     val rect = RectF()
 
@@ -33,9 +35,11 @@ class Key(
         const val SHIFT = 2
         const val BACKSPACE = 3
         const val SYMBOLS = 4
-        const val LAYOUT = 5
+        const val LANGUAGE = 5  // Sinhala / English; a long press opens the phone's list of keyboards
         const val SPACE = 6
         const val ENTER = 7
+        const val EMOJI = 8
+        const val MORE = 9      // the other page of symbols
     }
 }
 
@@ -43,60 +47,98 @@ interface KeyListener {
     fun onKey(key: Key, shifted: Boolean, long: Boolean)
     fun onPick(index: Int)
     fun onVoice()
+    fun onSettings()
 }
 
-/** The keyboard: a row of suggestions, then the keys. Drawn by hand, one view. */
+/**
+ * The colours of the icon: sepia by day (ivory keys on parchment, brown ink, maroon accents) and warm charcoal
+ * by night (gold accents).
+ */
+class Palette(context: Context) {
+    val dark = context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
+    val bg = if (dark) 0xFF1B1512.toInt() else 0xFFE7DCC4.toInt()
+    val key = if (dark) 0xFF362B25.toInt() else 0xFFFCF7EC.toInt()
+    val edge = if (dark) 0xFF120D0B.toInt() else 0xFFC9B892.toInt()
+    val special = if (dark) 0xFF2A211C.toInt() else 0xFFD6C7A6.toInt()
+    val pressed = if (dark) 0xFF5A4636.toInt() else 0xFFF3CF7A.toInt()
+    val accent = if (dark) 0xFFE3B75A.toInt() else 0xFF6E1C22.toInt()
+    val onAccent = if (dark) 0xFF2A1A12.toInt() else 0xFFFFF8E8.toInt()
+    val ink = if (dark) 0xFFF3E9D6.toInt() else 0xFF3B2A20.toInt()
+    val faint = if (dark) 0xFFA8998A.toInt() else 0xFF8A765F.toInt()
+}
+
+/**
+ * The keyboard: a row of suggestions, then the keys. Drawn by hand, one view.
+ * The sizes are those of Gboard, measured on a 411 dp wide phone: ten keys across, 5.3 dp between them, rows
+ * 59 dp apart with keys 47 dp tall, letters in Google Sans at 27.5 dp.
+ */
 class KeyboardView(context: Context) : View(context) {
     var listener: KeyListener? = null
     private var rows: List<List<Key>> = emptyList()
+    private var keys: List<Key> = emptyList()
+    /** 0 Wijesekara, 1 Easy Singlish, 2 Helakuru keys, 3 English */
     private var layout = 1
-    private var symbols = false
-    private var shift = false
+    /** password, e-mail and web address fields: letters only, no emoji or language key */
+    private var plain = false
+    /** 0 letters, 1 and 2 the pages of symbols */
+    private var symbols = 0
+    /** 0 off, 1 for one letter, 2 locked (a double tap) */
+    private var shift = 0
+    private var shiftAt = 0L
     private var candidates: List<String> = emptyList()
     private var selected = 0
     private val candidateRects = ArrayList<RectF>()
     private var pressed: Key? = null
+    private var pointer = -1
     /** shows the microphone at the end of the suggestion row */
     var voice = false
         set(v) { field = v; invalidate() }
     private val micRect = RectF()
+    private val gearRect = RectF()
     private var longDone = false
     private val handler = Handler(Looper.getMainLooper())
 
     private val dp = resources.displayMetrics.density
-    private val dark = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
     private val sinhala: Typeface = Typeface.createFromAsset(context.assets, "abhaya.ttf")
-    // Sepia by day (ivory keys on parchment, brown ink, maroon accents) and warm charcoal by night (gold accents):
-    // the colours of the icon.
-    private val bg = if (dark) 0xFF1B1512.toInt() else 0xFFE7DCC4.toInt()
-    private val strip = if (dark) 0xFF231B17.toInt() else 0xFFDFD2B6.toInt()
-    private val keyBg = if (dark) 0xFF362B25.toInt() else 0xFFFCF7EC.toInt()
-    private val keyEdge = if (dark) 0xFF120D0B.toInt() else 0xFFC9B892.toInt()
-    private val specialBg = if (dark) 0xFF2A211C.toInt() else 0xFFD6C7A6.toInt()
-    private val pressedBg = if (dark) 0xFF5A4636.toInt() else 0xFFF3CF7A.toInt()
-    private val accent = if (dark) 0xFFE3B75A.toInt() else 0xFF6E1C22.toInt()
-    private val onAccent = if (dark) 0xFF2A1A12.toInt() else 0xFFFFF8E8.toInt()
-    private val ink = if (dark) 0xFFF3E9D6.toInt() else 0xFF3B2A20.toInt()
-    private val faint = if (dark) 0xFFA8998A.toInt() else 0xFF8A765F.toInt()
+    private val latin: Typeface = Typeface.createFromAsset(context.assets, "googlesans.ttf")
+    private val pal = Palette(context)
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val text = Paint(Paint.ANTI_ALIAS_FLAG).apply { textAlign = Paint.Align.CENTER }
+    private val preview = RectF()
+    private val icons = HashMap<Int, Drawable>()
 
-    private val stripH = 46 * dp
-    private val rowH = 52 * dp
+    private val stripH = 48 * dp
+    private val rowH = 59 * dp
+    private val gapX = 5.33f * dp
+    private val gapY = 12 * dp
+    private val side = 1.9f * dp
+    private val radius = 6 * dp
 
     init {
         isHapticFeedbackEnabled = true
-        setLayout(1)
-    }
-
-    fun setLayout(l: Int) {
-        layout = l
-        symbols = false
-        shift = false
         build()
     }
 
+    fun setLayout(l: Int, plainField: Boolean) {
+        if (l == layout && plainField == plain && symbols == 0) return
+        layout = l
+        plain = plainField
+        symbols = 0
+        shift = 0
+        build()
+    }
+
+    /** English: a capital at the start of a sentence, as the text field asks. A locked shift stays. */
+    fun autoShift(on: Boolean) {
+        val s = if (on) 1 else 0
+        if (shift == 2 || shift == s || symbols != 0) return
+        shift = s
+        build()
+    }
+
+    /** `sel` is the highlighted suggestion; -1 for none (the words that may come next). */
     fun setCandidates(c: List<String>, sel: Int) {
+        if (c.isEmpty() && candidates.isEmpty()) return
         candidates = c
         selected = sel
         invalidate()
@@ -104,50 +146,62 @@ class KeyboardView(context: Context) : View(context) {
 
     // ---- the layouts
 
-    private fun letters(s: String) = s.map { Key(it.toString(), it) }
+    private fun letters(s: String, hints: String = "") =
+        s.mapIndexed { i, c -> Key(c.toString(), c, alt = hints.getOrNull(i)?.toString() ?: "", altText = true) }
+
+    private fun texts(s: String) = s.map { Key(it.toString(), action = Key.TEXT) }
+
+    private fun bottom(): List<Key> {
+        val english = layout == 3
+        val wide = plain
+        return listOfNotNull(
+            Key(if (symbols == 0) "?123" else if (english) "ABC" else "අආඉ", action = Key.SYMBOLS, weight = 1.5f),
+            Key(if (symbols == 2) "<" else ",", action = Key.TEXT),
+            if (wide) null else Key("", action = Key.EMOJI),
+            if (wide) null else Key("", action = Key.LANGUAGE),
+            Key(if (plain) "" else if (english) "English" else "සිංහල", action = Key.SPACE, weight = if (wide) 5f else 3f),
+            Key(if (symbols == 2) ">" else ".", action = Key.TEXT),
+            Key("", action = Key.ENTER, weight = 1.5f),
+        )
+    }
 
     private fun build() {
-        val bottom = { name: String ->
-            listOf(
-                Key(if (symbols) "අආ" else "?123", action = Key.SYMBOLS, weight = 1.5f),
-                Key("🌐", action = Key.LAYOUT, weight = 1.2f),
-                Key(",", action = Key.TEXT),
-                Key(name, action = Key.SPACE, weight = 4.3f),
-                Key(".", action = Key.TEXT),
-                Key("⏎", action = Key.ENTER, weight = 1.5f),
-            )
-        }
-        val name = Prefs.LAYOUTS[layout]
+        val up = shift != 0
+        val back = Key("", action = Key.BACKSPACE, weight = 1.5f)
         rows = when {
-            symbols -> listOf(
-                "1234567890".map { Key(it.toString(), action = Key.TEXT) },
-                "@#%&-+()/?".map { Key(it.toString(), action = Key.TEXT) },
-                listOf(Key("!", action = Key.TEXT), Key("\"", action = Key.TEXT), Key("'", action = Key.TEXT), Key(":", action = Key.TEXT),
-                    Key(";", action = Key.TEXT), Key("*", action = Key.TEXT), Key("=", action = Key.TEXT), Key("෴", action = Key.TEXT),
-                    Key("⌫", action = Key.BACKSPACE, weight = 1.5f)),
-                bottom(name),
+            symbols == 1 -> listOf(
+                texts("1234567890"),
+                texts("@#\$_&-+()/"),
+                listOf(Key("=\\<", action = Key.MORE, weight = 1.5f)) + texts("*\"':;!?") + back,
+                bottom(),
+            )
+            symbols == 2 -> listOf(
+                texts("~`|•√π÷×§∆"),
+                texts("£¢€¥^°={}\\"),
+                listOf(Key("?123", action = Key.MORE, weight = 1.5f)) + texts("%©®™✓[]") + back,
+                bottom(),
             )
             layout == 0 -> listOf(
                 wije("qwertyuiop["),
                 wije("asdfghjkl;`"),
-                listOf(Key("⇧", action = Key.SHIFT, weight = 1.4f)) + wije("xcvbnm,.\\") + Key("⌫", action = Key.BACKSPACE, weight = 1.4f),
-                bottom(name),
+                listOf(Key("", action = Key.SHIFT)) + wije("xcvbnm,.\\") + Key("", action = Key.BACKSPACE),
+                bottom(),
             )
             else -> listOf(
-                letters(if (shift) "QWERTYUIOP" else "qwertyuiop"),
-                letters(if (shift) "ASDFGHJKL" else "asdfghjkl"),
-                listOf(Key("⇧", action = Key.SHIFT, weight = 1.5f)) + letters(if (shift) "ZXCVBNM" else "zxcvbnm") +
-                    Key("⌫", action = Key.BACKSPACE, weight = 1.5f),
-                bottom(name),
+                letters(if (up) "QWERTYUIOP" else "qwertyuiop", "1234567890"),
+                letters(if (up) "ASDFGHJKL" else "asdfghjkl"),
+                listOf(Key("", action = Key.SHIFT, weight = 1.5f)) + letters(if (up) "ZXCVBNM" else "zxcvbnm") + back,
+                bottom(),
             )
         }
-        requestLayout()
+        keys = rows.flatten()
+        place()
         invalidate()
     }
 
     /** Wijesekara keys: the label is what the key types, the character is its US-QWERTY key. */
     private fun wije(keys: String) = keys.map { k ->
-        val c = if (shift) WIJE_SHIFT[k] ?: k.uppercaseChar() else k
+        val c = if (shift != 0) WIJE_SHIFT[k] ?: k.uppercaseChar() else k
         Key(WIJE[c] ?: c.toString(), c, alt = WIJE_ALT[c] ?: "")
     }
 
@@ -156,214 +210,218 @@ class KeyboardView(context: Context) : View(context) {
     /** room under the keys for the system's gesture bar and keyboard-switch button */
     private var bottomInset = 0
 
-    override fun onApplyWindowInsets(insets: WindowInsets): WindowInsets {
-        val b = if (Build.VERSION.SDK_INT >= 30) insets.getInsets(WindowInsets.Type.navigationBars()).bottom
-        else @Suppress("DEPRECATION") insets.systemWindowInsetBottom
+    fun setBottomInset(b: Int) {
         if (b != bottomInset) {
             bottomInset = b
             requestLayout()
         }
-        return super.onApplyWindowInsets(insets)
     }
 
     override fun onMeasure(w: Int, h: Int) {
-        setMeasuredDimension(MeasureSpec.getSize(w), (stripH + rowH * 4 + 6 * dp).toInt() + bottomInset)
+        setMeasuredDimension(MeasureSpec.getSize(w), (stripH + rowH * 4 + 30 * dp).toInt() + bottomInset)
     }
 
     override fun onSizeChanged(w: Int, h: Int, ow: Int, oh: Int) = place()
 
     private fun place() {
-        val gap = 3 * dp
-        var y = stripH + 2 * dp
+        if (width == 0) return
+        var y = stripH
         for (row in rows) {
             val total = row.sumOf { it.weight.toDouble() }.toFloat()
-            // short rows (asdfghjkl) are centred at the width of a key of the longest row
-            val unit = width / maxOf(total, 10f)
+            // short rows (asdfghjkl) are centred at the width of a key of a row of ten
+            val unit = (width - 2 * side) / maxOf(total, 10f)
             var x = (width - unit * total) / 2
             for (k in row) {
-                k.rect.set(x + gap, y + gap, x + unit * k.weight - gap, y + rowH - gap)
+                k.rect.set(x + gapX / 2, y + gapY / 2, x + unit * k.weight - gapX / 2, y + rowH - gapY / 2)
                 x += unit * k.weight
             }
             y += rowH
         }
     }
 
+    private fun isSinhala(s: String) = s.any { it in '඀'..'෿' }
+
+    /** A vowel sign or other mark with no letter under it. */
+    private fun isSign(s: String) = s.isNotEmpty() && (s == REPAYA || s[0] == '\u200D' || s[0] in '\u0DCA'..'\u0DDF' || s[0] in '\u0D81'..'\u0D83' || s[0] in '\u0DF2'..'\u0DF3')
+
+    private val signPath = Path()
+    private val signBounds = RectF()
+
+    /**
+     * A sign alone is put on a dotted circle by the font. After a no-break space it is shaped with
+     * no circle; its outline is then centred on the key by its own ink, a little larger. The small
+     * signs (ං ් ු) are enlarged further, towards [fit], so that they are not lost on the key.
+     */
+    private fun drawSign(c: Canvas, s: String, cx: Float, cy: Float, scale: Float, fit: Float) {
+        val t = when {
+            s == REPAYA -> "$s\u00A0" // the repaya sits over the letter after it
+            s[0] == '\u200D' -> "\u00A0" + s.substring(1)
+            else -> "\u00A0$s"
+        }
+        text.textSize *= scale
+        text.getTextPath(t, 0, t.length, 0f, 0f, signPath)
+        signPath.computeBounds(signBounds, true)
+        c.save()
+        val more = (fit / maxOf(signBounds.width(), signBounds.height(), 1f)).coerceIn(1f, 1.2f)
+        c.translate(cx, cy)
+        c.scale(more, more)
+        c.translate(-signBounds.centerX(), -signBounds.centerY())
+        c.drawPath(signPath, text)
+        c.restore()
+    }
+
+    /** Latin letters stand on one line, centred as capitals; Sinhala is centred on its own ink. */
+    private fun baseline(sinhalaLabel: Boolean, centre: Float): Float {
+        if (!sinhalaLabel) return centre + text.textSize * 0.358f
+        val fm = text.fontMetrics
+        return centre - (fm.ascent + fm.descent) / 2
+    }
+
     override fun onDraw(c: Canvas) {
-        c.drawColor(bg)
-        place()
-        paint.color = strip
-        c.drawRect(0f, 0f, width.toFloat(), stripH, paint)
-        drawCandidates(c)
-        for (k in rows.flatten()) {
-            val special = k.action != Key.TYPE && k.action != Key.TEXT && k.action != Key.SPACE
-            paint.color = when {
-                k === pressed -> pressedBg
-                k.action == Key.SHIFT && shift -> accent
-                k.action == Key.ENTER -> accent
-                special -> specialBg
-                else -> keyBg
+        c.drawColor(pal.bg)
+        drawStrip(c)
+        for (k in keys) {
+            val shifted = k.action == Key.SHIFT && shift != 0
+            val face = when {
+                k === pressed -> pal.pressed
+                shifted || k.action == Key.ENTER -> pal.accent
+                k.action == Key.TYPE || k.action == Key.SPACE || k.action == Key.EMOJI || k.action == Key.LANGUAGE -> pal.key
+                k.action == Key.TEXT && symbols != 0 && k.rect.top < stripH + 3 * rowH -> pal.key
+                else -> pal.special
             }
+            // "?123" and Enter are round, as on Gboard
+            val r = if (k.action == Key.SYMBOLS || k.action == Key.ENTER) k.rect.height() / 2 else radius
             // a darker edge under the key gives it a little height
-            val face = paint.color
-            paint.color = keyEdge
-            c.drawRoundRect(k.rect.left, k.rect.top + 1.5f * dp, k.rect.right, k.rect.bottom + 1.5f * dp, 8 * dp, 8 * dp, paint)
+            paint.color = pal.edge
+            c.drawRoundRect(k.rect.left, k.rect.top + dp, k.rect.right, k.rect.bottom + dp, r, r, paint)
             paint.color = face
-            c.drawRoundRect(k.rect, 8 * dp, 8 * dp, paint)
-            val sinhalaLabel = k.label.any { it in '඀'..'෿' }
-            text.typeface = if (sinhalaLabel) sinhala else Typeface.DEFAULT
-            text.color = if (k.action == Key.ENTER || (k.action == Key.SHIFT && shift)) onAccent else if (k.action == Key.SPACE) faint else ink
-            text.textSize = when {
-                k.action == Key.SPACE -> 14 * dp
-                k.action == Key.SYMBOLS -> 15 * dp
-                sinhalaLabel -> (if (k.label.length > 2) 17 else 23) * dp
-                else -> 21 * dp
+            c.drawRoundRect(k.rect, r, r, paint)
+            val colour = if (k.action == Key.ENTER || shifted) pal.onAccent else pal.ink
+            val icon = when (k.action) {
+                Key.SHIFT -> if (shift == 2) R.drawable.ic_shift_lock else if (shift == 1) R.drawable.ic_shift_on else R.drawable.ic_shift
+                Key.BACKSPACE -> R.drawable.ic_backspace
+                Key.ENTER -> R.drawable.ic_enter
+                Key.EMOJI -> R.drawable.ic_emoji
+                Key.LANGUAGE -> R.drawable.ic_globe
+                else -> 0
             }
-            if (drawIcon(c, k, text.color, face)) continue
-            // a sign on its own is drawn on a dotted circle by the font; ink centred vertically
-            val fm = text.fontMetrics
-            c.drawText(k.label, k.rect.centerX(), k.rect.centerY() - (fm.ascent + fm.descent) / 2, text)
+            if (icon != 0) {
+                drawIcon(c, icon, k.rect.centerX(), k.rect.centerY(), 24 * dp, colour)
+                continue
+            }
+            val si = isSinhala(k.label)
+            text.typeface = if (si) sinhala else latin
+            text.color = if (k.action == Key.SPACE) pal.faint else colour
+            text.textSize = when {
+                k.action == Key.SPACE -> (if (si) 16 else 14) * dp
+                k.action == Key.SYMBOLS || k.action == Key.MORE -> 17 * dp
+                isSign(k.label) -> 27 * dp
+                si -> (if (k.label.length > 2) 18 else 27) * dp
+                k.action == Key.TEXT -> 24 * dp
+                else -> 27.5f * dp
+            }
+            if (si && !isSign(k.label)) { // the widest letters (ඤ ඥ) must stay inside a Wijesekara key
+                val room = k.rect.width() - 5 * dp
+                val w = text.measureText(k.label)
+                if (w > room) text.textSize *= room / w
+            }
+            if (isSign(k.label)) {
+                // the joining and the touching hal kirima look like the plain one: a mark under each tells them apart
+                val mark = when (k.label) { JOINING -> "><"; TOUCHING -> ")("; else -> "" }
+                drawSign(c, k.label, k.rect.centerX(), k.rect.centerY() - (if (mark.isEmpty()) 0f else 8 * dp), 1f, 19 * dp)
+                if (mark.isNotEmpty()) {
+                    text.typeface = latin
+                    text.textSize = 15 * dp
+                    c.drawText(mark, k.rect.centerX(), k.rect.bottom - 8 * dp, text)
+                }
+            }
+            else c.drawText(k.label, k.rect.centerX(), baseline(si, k.rect.centerY()), text)
             if (k.alt.length == 1) { // the joined letters (ද්‍ව ඤ්ච …) are too wide for a corner; a long press still types them
-                text.typeface = sinhala
+                text.typeface = if (k.altText) latin else sinhala
                 text.textSize = 11 * dp
-                text.color = faint
-                c.drawText(k.alt, k.rect.right - 9 * dp, k.rect.top + 13 * dp, text)
+                text.color = pal.faint
+                if (isSign(k.alt)) drawSign(c, k.alt, k.rect.right - 8 * dp, k.rect.top + 9 * dp, 1.2f, 0f)
+                else c.drawText(k.alt, k.rect.right - 6.5f * dp, k.rect.top + 12 * dp, text)
             }
         }
         drawPreview(c)
     }
 
-    private val shape = Path()
-
-    /** Shift, backspace, Enter and the layout key are drawn as solid shapes: the font's outline arrows are too faint. */
-    private fun drawIcon(c: Canvas, k: Key, colour: Int, face: Int): Boolean {
-        val x = k.rect.centerX()
-        val y = k.rect.centerY()
-        val u = dp
-        paint.color = colour
-        paint.strokeCap = Paint.Cap.ROUND
-        paint.strokeJoin = Paint.Join.ROUND
-        shape.rewind()
-        when (k.action) {
-            Key.SHIFT -> {
-                shape.moveTo(x, y - 10 * u); shape.lineTo(x + 10 * u, y); shape.lineTo(x + 4.5f * u, y)
-                shape.lineTo(x + 4.5f * u, y + 8.5f * u); shape.lineTo(x - 4.5f * u, y + 8.5f * u)
-                shape.lineTo(x - 4.5f * u, y); shape.lineTo(x - 10 * u, y); shape.close()
-                paint.style = Paint.Style.FILL_AND_STROKE
-                paint.strokeWidth = 1.6f * u
-                c.drawPath(shape, paint)
-            }
-            Key.ENTER -> {
-                paint.style = Paint.Style.STROKE
-                paint.strokeWidth = 3 * u
-                shape.moveTo(x + 8.5f * u, y - 7.5f * u); shape.lineTo(x + 8.5f * u, y + 3 * u); shape.lineTo(x - 3 * u, y + 3 * u)
-                c.drawPath(shape, paint)
-                shape.rewind()
-                shape.moveTo(x - 10 * u, y + 3 * u); shape.lineTo(x - 3 * u, y - 3.5f * u); shape.lineTo(x - 3 * u, y + 9.5f * u); shape.close()
-                paint.style = Paint.Style.FILL_AND_STROKE
-                paint.strokeWidth = 1.6f * u
-                c.drawPath(shape, paint)
-            }
-            Key.BACKSPACE -> {
-                shape.moveTo(x - 12 * u, y); shape.lineTo(x - 5 * u, y - 8 * u); shape.lineTo(x + 11 * u, y - 8 * u)
-                shape.lineTo(x + 11 * u, y + 8 * u); shape.lineTo(x - 5 * u, y + 8 * u); shape.close()
-                paint.style = Paint.Style.FILL_AND_STROKE
-                paint.strokeWidth = 1.6f * u
-                c.drawPath(shape, paint)
-                paint.style = Paint.Style.STROKE
-                paint.strokeWidth = 2 * u
-                paint.color = face
-                c.drawLine(x - 0.5f * u, y - 3.5f * u, x + 6.5f * u, y + 3.5f * u, paint)
-                c.drawLine(x - 0.5f * u, y + 3.5f * u, x + 6.5f * u, y - 3.5f * u, paint)
-            }
-            Key.LAYOUT -> {
-                // a globe in the ink of the keys
-                val r = 9.5f * u
-                paint.style = Paint.Style.STROKE
-                paint.strokeWidth = 1.7f * u
-                c.drawCircle(x, y, r, paint)
-                c.drawOval(x - 4.2f * u, y - r, x + 4.2f * u, y + r, paint)
-                c.drawLine(x - r, y, x + r, y, paint)
-                c.drawLine(x - 8.2f * u, y - 4.8f * u, x + 8.2f * u, y - 4.8f * u, paint)
-                c.drawLine(x - 8.2f * u, y + 4.8f * u, x + 8.2f * u, y + 4.8f * u, paint)
-            }
-            else -> { paint.style = Paint.Style.FILL; return false }
-        }
-        paint.style = Paint.Style.FILL
-        return true
+    private fun drawIcon(c: Canvas, id: Int, x: Float, y: Float, size: Float, colour: Int) {
+        val d = icons.getOrPut(id) { context.getDrawable(id)!!.mutate() }
+        val h = (size / 2).toInt()
+        d.setBounds(x.toInt() - h, y.toInt() - h, x.toInt() + h, y.toInt() + h)
+        d.setTint(colour)
+        d.draw(c)
     }
+
+    private fun previewed(k: Key) = (k.action == Key.TYPE || k.action == Key.TEXT) && k.label.isNotEmpty()
 
     /** The pressed letter, larger, above the finger that hides it. */
     private fun drawPreview(c: Canvas) {
         val k = pressed ?: return
-        if (k.action != Key.TYPE && k.action != Key.TEXT) return
+        if (!previewed(k)) return
         val w = maxOf(k.rect.width() * 1.35f, 46 * dp)
         val cx = k.rect.centerX().coerceIn(w / 2 + 2 * dp, width - w / 2 - 2 * dp)
-        val r = RectF(cx - w / 2, k.rect.top - 58 * dp, cx + w / 2, k.rect.top - 4 * dp)
-        paint.color = keyEdge
-        c.drawRoundRect(r.left, r.top + 2 * dp, r.right, r.bottom + 2 * dp, 12 * dp, 12 * dp, paint)
-        paint.color = accent
-        c.drawRoundRect(r, 12 * dp, 12 * dp, paint)
-        text.typeface = if (k.label.any { it in '\u0D80'..'\u0DFF' }) sinhala else Typeface.DEFAULT
-        text.color = onAccent
-        text.textSize = 30 * dp
-        val fm = text.fontMetrics
-        c.drawText(k.label, r.centerX(), r.centerY() - (fm.ascent + fm.descent) / 2, text)
+        preview.set(cx - w / 2, k.rect.top - 60 * dp, cx + w / 2, k.rect.top - 5 * dp)
+        paint.color = pal.edge
+        c.drawRoundRect(preview.left, preview.top + 2 * dp, preview.right, preview.bottom + 2 * dp, 12 * dp, 12 * dp, paint)
+        paint.color = pal.accent
+        c.drawRoundRect(preview, 12 * dp, 12 * dp, paint)
+        val si = isSinhala(k.label)
+        text.typeface = if (si) sinhala else latin
+        text.color = pal.onAccent
+        text.textSize = 32 * dp
+        if (isSign(k.label)) drawSign(c, k.label, preview.centerX(), preview.centerY(), 1f, 24 * dp)
+        else c.drawText(k.label, preview.centerX(), baseline(si, preview.centerY()), text)
     }
 
-    private fun drawCandidates(c: Canvas) {
+    /** The suggestions, then the settings gear and the microphone. */
+    private fun drawStrip(c: Canvas) {
         candidateRects.clear()
-        val end = if (voice) width - stripH - 4 * dp else width.toFloat()
-        if (voice) drawMic(c)
+        val slot = 44 * dp
+        var end = width - 4 * dp
+        if (voice) {
+            micRect.set(end - slot, 0f, end, stripH)
+            paint.color = pal.key
+            c.drawCircle(micRect.centerX(), micRect.centerY(), 17.5f * dp, paint)
+            drawIcon(c, R.drawable.ic_mic, micRect.centerX(), micRect.centerY(), 23 * dp, pal.ink)
+            end -= slot
+        } else micRect.setEmpty()
+        gearRect.set(end - slot, 0f, end, stripH)
+        drawIcon(c, R.drawable.ic_settings, gearRect.centerX(), gearRect.centerY(), 23 * dp, pal.faint)
+        end -= slot
         if (candidates.isEmpty()) {
-            text.typeface = Typeface.DEFAULT
-            text.textSize = 13 * dp
-            text.color = faint
-            text.letterSpacing = 0.04f
-            c.drawText("ලියමු  ·  " + Prefs.LAYOUTS[layout], width / 2f, stripH / 2 + 5 * dp, text)
-            text.letterSpacing = 0f
+            text.typeface = sinhala
+            text.textSize = 16 * dp
+            text.color = pal.faint
+            val name = if (plain) "" else "  ·  " + NAMES[layout]
+            c.drawText("ලියමු$name", end / 2 + 2 * dp, baseline(true, stripH / 2), text)
             return
         }
         var x = 6 * dp
-        text.textSize = 19 * dp
         for ((i, w) in candidates.withIndex()) {
-            text.typeface = if (w.any { it in '඀'..'෿' }) sinhala else Typeface.DEFAULT
-            val tw = text.measureText(w) + 22 * dp
-            val r = RectF(x, 6 * dp, x + tw, stripH - 4 * dp)
+            val si = isSinhala(w)
+            text.typeface = if (si) sinhala else latin
+            text.textSize = (if (si) 20 else 18) * dp
+            val tw = text.measureText(w) + 20 * dp
+            val r = RectF(x, 6 * dp, x + tw, stripH - 6 * dp)
             if (i > 0 && r.right > end) break
             if (r.right > end) r.right = end
             candidateRects.add(r)
             if (i == selected) {
-                paint.color = accent
+                paint.color = pal.accent
                 c.drawRoundRect(r, 8 * dp, 8 * dp, paint)
             }
-            text.color = if (i == selected) onAccent else ink
-            val fm = text.fontMetrics
-            c.drawText(w, r.centerX(), r.centerY() - (fm.ascent + fm.descent) / 2, text)
+            text.color = if (i == selected) pal.onAccent else pal.ink
+            c.drawText(w, r.centerX(), baseline(si, r.centerY()), text)
             // a hairline between the words that are not highlighted
             if (i > 0 && i != selected && i - 1 != selected) {
-                paint.color = keyEdge
-                c.drawRect(r.left - 2.5f * dp, r.top + 9 * dp, r.left - 1.5f * dp, r.bottom - 9 * dp, paint)
+                paint.color = pal.edge
+                c.drawRect(r.left - 2.5f * dp, r.top + 8 * dp, r.left - 1.5f * dp, r.bottom - 8 * dp, paint)
             }
             x += tw + 4 * dp
         }
-    }
-
-    /** A small microphone, drawn in lines so that it takes the colours of the theme. */
-    private fun drawMic(c: Canvas) {
-        micRect.set(width - stripH - 2 * dp, 0f, width - 2 * dp, stripH)
-        val cx = micRect.centerX()
-        val cy = micRect.centerY()
-        paint.color = specialBg
-        c.drawCircle(cx, cy, 17 * dp, paint)
-        paint.color = accent
-        c.drawRoundRect(cx - 3.2f * dp, cy - 10 * dp, cx + 3.2f * dp, cy + 2 * dp, 3.2f * dp, 3.2f * dp, paint)
-        paint.style = Paint.Style.STROKE
-        paint.strokeWidth = 1.8f * dp
-        paint.strokeCap = Paint.Cap.ROUND
-        c.drawArc(cx - 6.5f * dp, cy - 8 * dp, cx + 6.5f * dp, cy + 5.5f * dp, 0f, 180f, false, paint)
-        c.drawLine(cx, cy + 5.5f * dp, cx, cy + 9.5f * dp, paint)
-        c.drawLine(cx - 3.5f * dp, cy + 9.5f * dp, cx + 3.5f * dp, cy + 9.5f * dp, paint)
-        paint.style = Paint.Style.FILL
     }
 
     // ---- touch
@@ -373,68 +431,96 @@ class KeyboardView(context: Context) : View(context) {
             val k = pressed ?: return
             if (k.action == Key.BACKSPACE) {
                 listener?.onKey(k, false, false)
-                handler.postDelayed(this, 60)
-            } else if (k.alt.isNotEmpty() && !longDone) {
+                handler.postDelayed(this, 55)
+            } else if ((k.alt.isNotEmpty() || k.action == Key.LANGUAGE) && !longDone) {
                 longDone = true
                 performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
-                listener?.onKey(k, shift, true)
+                listener?.onKey(k, shift != 0, true)
                 afterKey(k)
             }
         }
     }
 
+    /**
+     * One key is held at a time. A second finger coming down types the key under the first at once, so fast
+     * typing with two thumbs loses no letter.
+     */
     override fun onTouchEvent(e: MotionEvent): Boolean {
+        val i = e.actionIndex
         when (e.actionMasked) {
-            MotionEvent.ACTION_DOWN -> {
-                if (e.y < stripH) {
-                    if (voice && micRect.contains(e.x, e.y)) {
-                        performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                        listener?.onVoice()
-                        return true
-                    }
-                    val i = candidateRects.indexOfFirst { it.contains(e.x, e.y) }
-                    if (i >= 0) listener?.onPick(i)
-                    return true
-                }
-                pressed = rows.flatten().minByOrNull { k ->
-                    val dx = maxOf(k.rect.left - e.x, 0f, e.x - k.rect.right)
-                    val dy = maxOf(k.rect.top - e.y, 0f, e.y - k.rect.bottom)
-                    dx * dx + dy * dy
-                }
-                longDone = false
-                performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                pressed?.let {
-                    if (it.action == Key.BACKSPACE) listener?.onKey(it, false, false)
-                    handler.postDelayed(repeat, 380)
-                }
-                invalidate()
+            MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> {
+                release(true)
+                down(e.getX(i), e.getY(i), e.getPointerId(i))
             }
-            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                handler.removeCallbacks(repeat)
-                val k = pressed
-                pressed = null
-                if (k != null && e.actionMasked == MotionEvent.ACTION_UP && !longDone && k.action != Key.BACKSPACE) {
-                    when (k.action) {
-                        Key.SHIFT -> { shift = !shift; build() }
-                        Key.SYMBOLS -> { symbols = !symbols; build() }
-                        else -> { listener?.onKey(k, shift, false); afterKey(k) }
-                    }
-                }
-                invalidate()
-            }
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP -> if (e.getPointerId(i) == pointer) release(true)
+            MotionEvent.ACTION_CANCEL -> release(false)
         }
         return true
     }
 
-    /** Shift is for one letter. */
+    private fun down(x: Float, y: Float, id: Int) {
+        if (y < stripH) {
+            when {
+                micRect.contains(x, y) -> { tick(); listener?.onVoice() }
+                gearRect.contains(x, y) -> { tick(); listener?.onSettings() }
+                else -> {
+                    val i = candidateRects.indexOfFirst { it.contains(x, y) }
+                    if (i >= 0) { tick(); listener?.onPick(i) }
+                }
+            }
+            return
+        }
+        val k = keys.minByOrNull { k ->
+            val dx = maxOf(k.rect.left - x, 0f, x - k.rect.right)
+            val dy = maxOf(k.rect.top - y, 0f, y - k.rect.bottom)
+            dx * dx + dy * dy
+        } ?: return
+        pressed = k
+        pointer = id
+        longDone = false
+        tick()
+        if (k.action == Key.BACKSPACE) listener?.onKey(k, false, false)
+        handler.postDelayed(repeat, 350)
+        invalidate()
+    }
+
+    private fun tick() = performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+
+    /** The finger left the key: it shows as released first, and then does its work. */
+    private fun release(type: Boolean) {
+        handler.removeCallbacks(repeat)
+        val k = pressed ?: return
+        pressed = null
+        pointer = -1
+        invalidate()
+        if (!type || longDone || k.action == Key.BACKSPACE) return
+        when (k.action) {
+            Key.SHIFT -> {
+                val now = SystemClock.uptimeMillis()
+                shift = if (shift == 2) 0 else if (now - shiftAt < 350) 2 else if (shift == 1) 0 else 1
+                shiftAt = now
+                build()
+            }
+            Key.SYMBOLS -> { symbols = if (symbols == 0) 1 else 0; shift = 0; build() }
+            Key.MORE -> { symbols = 3 - symbols; build() }
+            else -> { listener?.onKey(k, shift != 0, false); afterKey(k) }
+        }
+    }
+
+    /** Shift is for one letter, unless it is locked. */
     private fun afterKey(k: Key) {
-        if (shift && k.action == Key.TYPE) {
-            shift = false
+        if (shift == 1 && k.action == Key.TYPE) {
+            shift = 0
             build()
         }
     }
 
     companion object {
+        /** what the suggestion row shows while there is nothing to suggest */
+        val NAMES = Prefs.LAYOUTS + "English"
+        private const val REPAYA = "ර්\u200D"
+        private const val JOINING = "්\u200D"
+        private const val TOUCHING = "\u200D්"
         private val WIJE = mapOf(
             '`' to "්‍ර", '~' to "ර්‍", 'q' to "ු", 'Q' to "ූ", 'w' to "අ", 'W' to "උ", 'e' to "ැ", 'E' to "ෑ", 'r' to "ර", 'R' to "ඍ",
             't' to "එ", 'T' to "ඔ", 'y' to "හ", 'Y' to "ශ", 'u' to "ම", 'U' to "ඹ", 'i' to "ස", 'I' to "ෂ", 'o' to "ද", 'O' to "ධ",
