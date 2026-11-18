@@ -22,7 +22,7 @@ const md = readFileSync(join(ROOT, 'docs/store/listing.md'), 'utf8')
 const play = md.slice(md.indexOf('## Google Play'), md.indexOf('**Data safety form'))
 const short = lang => play.match(new RegExp(`^- ${lang}[^:]*: \`(.+)\`$`, 'm'))[1]
 const full = lang => play.split(`**Full description (${lang})**`)[1].match(/```\n([\s\S]*?)\n```/)[1]
-  .replace(/([^\n])\n(?=[^\n•A-Z])/g, '$1 ') // lines wrapped in the file are one paragraph
+  .replace(/([^\n]{80,})\n(?=[^\n•])/g, '$1 ') // a long line wrapped in the file is one paragraph; headings stay
 const listing = {
   'en-US': { title: 'Liyamu – Sinhala Keyboard', short: short('en'), full: full('en') },
   'si-LK': { title: 'ලියමු – සිංහල යතුරුපුවරුව', short: short('si'), full: full('si') },
