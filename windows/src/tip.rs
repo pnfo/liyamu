@@ -92,6 +92,47 @@ impl Tip {
     }
 }
 
+/// A key press: through the engine and into the text field. Returns whether the key was used.
+fn press(tip: &ComObject<Tip>, ctx: &ITfContext, key: Key, mods: Mods) -> BOOL {
+    let changed = tip.sync();
+    if !tip.wants(key, mods) && changed.as_ref().map_or(true, |r| r.commit.is_empty()) {
+        return FALSE;
+    }
+    let r = {
+        let mut st = tip.st.borrow_mut();
+        st.context = Some(ctx.clone());
+        st.session.key(key, mods)
+    };
+    let handled = r.handled;
+    dlog!("key {:?} {:?} -> {:?}", key, mods, r);
+    let responses = changed.into_iter().chain(std::iter::once(r)).collect();
+    if request(tip, ctx, responses, true).is_err() {
+        // the text field cannot be written now: drop the word rather than lose the key
+        tip.st.borrow_mut().session.reset();
+        candidates::hide();
+        return FALSE;
+    }
+    handled.into()
+}
+
+/// Preserved keys are named by GUIDs: this one + the place in `keys::ALT_KEYS` × 2 (+ 1 with Shift).
+const ALT_KEY_GUID: GUID = GUID::from_u128(0x7c2e0000_5d1b_4f0a_9a53_6b1f0c8d2e41);
+
+/// Asks for (or gives back) Right Alt + the keys of the AltGr letters. Apps treat Alt+key as their own
+/// shortcut and do not show it to keyboards (no OnTestKeyDown), unless the keyboard has preserved it.
+fn preserve(km: &ITfKeystrokeMgr, tid: u32, on: bool) {
+    for (i, &(vk, _, _)) in keys::ALT_KEYS.iter().enumerate() {
+        for (shift, mods) in [(0, TF_MOD_RALT), (1, TF_MOD_RALT | TF_MOD_SHIFT)] {
+            let guid = GUID { data1: ALT_KEY_GUID.data1 + (i * 2 + shift) as u32, ..ALT_KEY_GUID };
+            let pk = TF_PRESERVEDKEY { uVKey: vk as u32, uModifiers: mods };
+            let r = unsafe { if on { km.PreserveKey(tid, &guid, &pk, &[]) } else { km.UnpreserveKey(&guid, &pk) } };
+            if r.is_err() {
+                dlog!("preserve {} vk={:#x} on={} -> {:?}", i, vk, on, r);
+            }
+        }
+    }
+}
+
 /// Runs `f` with a write lock on the text field.
 #[implement(ITfEditSession)]
 struct Edit {
@@ -336,6 +377,7 @@ impl ITfTextInputProcessor_Impl for Tip_Impl {
                     let _ = src.UnadviseSink(st.thread_mgr_cookie);
                 }
                 if let Ok(km) = tm.cast::<ITfKeystrokeMgr>() {
+                    preserve(&km, st.tid, false);
                     let _ = km.UnadviseKeyEventSink(st.tid);
                 }
                 if let (Some(button), Ok(lbm)) = (st.langbar.take(), tm.cast::<ITfLangBarItemMgr>()) {
@@ -365,6 +407,7 @@ impl ITfTextInputProcessorEx_Impl for Tip_Impl {
             let km: ITfKeystrokeMgr = tm.cast()?;
             let keys: ITfKeyEventSink = me.to_interface();
             km.AdviseKeyEventSink(tid, &keys, TRUE)?;
+            preserve(&km, tid, true);
             let attr = CoCreateInstance::<_, ITfCategoryMgr>(&CLSID_TF_CategoryMgr, None, CLSCTX_INPROC_SERVER)
                 .and_then(|c| c.RegisterGUID(&ATTR_GUID))
                 .unwrap_or(0);
@@ -447,25 +490,7 @@ impl ITfKeyEventSink_Impl for Tip_Impl {
         let (Some(ctx), Some((key, mods))) = (pic, keys::translate(wparam.0 as u16, lparam.0)) else {
             return Ok(FALSE);
         };
-        let changed = self.sync();
-        if !self.wants(key, mods) && changed.as_ref().map_or(true, |r| r.commit.is_empty()) {
-            return Ok(FALSE);
-        }
-        let r = {
-            let mut st = self.st.borrow_mut();
-            st.context = Some(ctx.clone());
-            st.session.key(key, mods)
-        };
-        let handled = r.handled;
-        dlog!("OnKeyDown {:?} {:?} -> {:?}", key, mods, r);
-        let responses = changed.into_iter().chain(std::iter::once(r)).collect();
-        if request(&self.to_object(), ctx, responses, true).is_err() {
-            // the text field cannot be written now: drop the word rather than lose the key
-            self.st.borrow_mut().session.reset();
-            candidates::hide();
-            return Ok(FALSE);
-        }
-        Ok(handled.into())
+        Ok(press(&self.to_object(), ctx, key, mods))
     })
     }
 
@@ -475,8 +500,28 @@ impl ITfKeyEventSink_Impl for Tip_Impl {
     fn OnKeyUp(&self, _: Option<&ITfContext>, _: WPARAM, _: LPARAM) -> Result<BOOL> {
         Ok(FALSE)
     }
-    fn OnPreservedKey(&self, _: Option<&ITfContext>, _: *const GUID) -> Result<BOOL> {
-        Ok(FALSE)
+    /// Right Alt with a key of the AltGr letters (see `preserve`).
+    fn OnPreservedKey(&self, pic: Option<&ITfContext>, guid: *const GUID) -> Result<BOOL> {
+        crate::guard(Ok(FALSE), || {
+        let g = unsafe { *guid };
+        let i = g.data1.wrapping_sub(ALT_KEY_GUID.data1) as usize;
+        let same = GUID { data1: ALT_KEY_GUID.data1, ..g } == ALT_KEY_GUID;
+        let (Some(ctx), Some(&(_, plain, shifted))) = (pic, keys::ALT_KEYS.get(i / 2).filter(|_| same)) else {
+            return Ok(FALSE);
+        };
+        let c = if i % 2 == 1 { shifted } else { plain };
+        self.sync();
+        let ours = self.st.borrow().session.alt_layer(c);
+        dlog!("OnPreservedKey {:?} ours={}", c, ours);
+        if !ours {
+            return Ok(FALSE); // the app's own Alt+key
+        }
+        let used = press(&self.to_object(), ctx, Key::Char(c), Mods { altgr: true, ctrl: false });
+        if used.as_bool() {
+            keys::mask_alt();
+        }
+        Ok(used)
+    })
     }
 }
 

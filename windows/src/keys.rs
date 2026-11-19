@@ -52,6 +52,17 @@ fn by_vk(vk: u16) -> Option<(char, char)> {
     })
 }
 
+/// After Right Alt + a key that the keyboard used, the app has seen Alt go down and nothing else, and would
+/// open its menu (the key tips of a ribbon) when Alt goes up. A tap of Ctrl in between tells it that Alt
+/// was used with something. (The unassigned key 0xE8, which some programs use for this, does not stop
+/// WordCraft's key tips.)
+pub fn mask_alt() {
+    unsafe {
+        keybd_event(VK_CONTROL.0 as u8, 0, KEYBD_EVENT_FLAGS(0), 0);
+        keybd_event(VK_CONTROL.0 as u8, 0, KEYEVENTF_KEYUP, 0);
+    }
+}
+
 fn down(vk: VIRTUAL_KEY) -> bool {
     unsafe { GetKeyState(vk.0 as i32) < 0 }
 }
@@ -66,9 +77,11 @@ pub fn translate(vk: u16, lparam: isize) -> Option<(Key, Mods)> {
         | VK_PACKET => return None,
         _ => {}
     }
-    // AltGr arrives as left Ctrl + right Alt; the left Alt is for menus, so like Ctrl
-    let altgr = down(VK_RMENU);
-    let ctrl = (down(VK_CONTROL) && !altgr) || down(VK_LMENU) || down(VK_LWIN) || down(VK_RWIN);
+    // AltGr is right Alt (which arrives with a left Ctrl on layouts that have AltGr) or, as in every
+    // Windows layout, Ctrl+Alt. The left Alt alone is for menus, so like Ctrl.
+    let alt = down(VK_MENU);
+    let altgr = down(VK_RMENU) || (alt && down(VK_CONTROL));
+    let ctrl = (down(VK_CONTROL) && !altgr) || (alt && !altgr) || down(VK_LWIN) || down(VK_RWIN);
     let mods = Mods { altgr, ctrl };
     let key = match v {
         VK_SPACE => Key::Space,
@@ -98,3 +111,16 @@ pub fn translate(vk: u16, lparam: isize) -> Option<(Key, Mods)> {
     };
     Some((key, mods))
 }
+
+/// The keys that can have an AltGr letter, as (virtual key on the US layout, plain, shifted). Apps do not
+/// pass Alt+key to keyboards, so the text service asks for these with ITfKeystrokeMgr::PreserveKey.
+pub const ALT_KEYS: &[(u16, char, char)] = &[
+    (b'A' as u16, 'a', 'A'), (b'B' as u16, 'b', 'B'), (b'C' as u16, 'c', 'C'), (b'D' as u16, 'd', 'D'),
+    (b'E' as u16, 'e', 'E'), (b'F' as u16, 'f', 'F'), (b'G' as u16, 'g', 'G'), (b'H' as u16, 'h', 'H'),
+    (b'I' as u16, 'i', 'I'), (b'J' as u16, 'j', 'J'), (b'K' as u16, 'k', 'K'), (b'L' as u16, 'l', 'L'),
+    (b'M' as u16, 'm', 'M'), (b'N' as u16, 'n', 'N'), (b'O' as u16, 'o', 'O'), (b'P' as u16, 'p', 'P'),
+    (b'Q' as u16, 'q', 'Q'), (b'R' as u16, 'r', 'R'), (b'S' as u16, 's', 'S'), (b'T' as u16, 't', 'T'),
+    (b'U' as u16, 'u', 'U'), (b'V' as u16, 'v', 'V'), (b'W' as u16, 'w', 'W'), (b'X' as u16, 'x', 'X'),
+    (b'Y' as u16, 'y', 'Y'), (b'Z' as u16, 'z', 'Z'),
+    (VK_OEM_1.0, ';', ':'), (VK_OEM_7.0, '\'', '"'), (VK_OEM_COMMA.0, ',', '<'), (VK_OEM_PERIOD.0, '.', '>'),
+];

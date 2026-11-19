@@ -97,25 +97,48 @@ fn base(key: char) -> Option<&'static str> {
     })
 }
 
-/// AltGr (right Alt / Option) keys: sanyaka letters, rare letters, and the old ligatures from Akkharapadayo.
+/// AltGr (right Alt / Option) keys: the third level of the Windows Sinhala Wijesekara layout (sanyaka
+/// letters, rare letters, vowel letters and signs in one key), and the old ligatures from Akkharapadayo
+/// on keys that level leaves free.
 fn alt(key: char) -> Option<&'static str> {
     Some(match key {
         'o' => "ඳ",
         '.' => "ඟ",
         'v' => "ඬ",
         'x' => "ඞ",
+        'c' => "ඦ",
         ',' => "ඏ",
+        'b' => "ඐ",
+        'z' => "ඌ",
+        'y' => "ඎ",
+        ';' => "ඖ",
+        'f' => "ආ",
+        'g' => "ඇ",
+        'h' => "ඈ",
+        'k' => "ඓ",
+        'l' => "ඕ",
+        't' => "එ",
         'a' => "ෳ",
+        'd' => "ෲ",
+        'e' => "ෛ",
+        'q' => "ෞ",
+        'r' => "ේ",
+        's' => "ෝ",
+        'w' => "ො",
         '\'' => "෴",
-        'C' => "ඦ",
         'j' => "ද\u{0DCA}\u{200D}ව", // ද්‍ව
         'O' => "ද\u{0DCA}\u{200D}ධ", // ද්‍ධ
         'p' => "ඤ\u{0DCA}ච",         // ඤ්ච
         'P' => "ඤ\u{0DCA}ඡ",         // ඤ්ඡ
-        'c' => "ඤ\u{0DCA}ජ",         // ඤ්ජ
+        'C' => "ඤ\u{0DCA}ජ",         // ඤ්ජ (Akkharapadayo had it on c, which is ඦ in the Windows layout)
         'G' => "ට\u{0DCA}ඨ",         // ට්ඨ
         _ => return None,
     })
+}
+
+/// Whether AltGr with `key` types something of its own.
+pub fn has_alt(key: char) -> bool {
+    alt(key).is_some()
 }
 
 /// What a key types, given the word so far (rendered). `None` = not a layout key.

@@ -532,7 +532,8 @@ class KeyboardView(context: Context) : View(context) {
         )
         private val WIJE_SHIFT = mapOf('[' to '{', ';' to ':', ',' to '<', '.' to '>', '`' to '~', '\\' to '|')
         /** AltGr letters, typed with a long press */
-        private val WIJE_ALT = mapOf('o' to "ඳ", '.' to "ඟ", 'v' to "ඬ", 'x' to "ඞ", ',' to "ඏ", 'a' to "ෳ", 'C' to "ඦ",
-            'j' to "ද්‍ව", 'O' to "ද්‍ධ", 'p' to "ඤ්ච", 'P' to "ඤ්ඡ", 'c' to "ඤ්ජ", 'G' to "ට්ඨ")
+        private val WIJE_ALT = mapOf('o' to "ඳ", '.' to "ඟ", 'v' to "ඬ", 'x' to "ඞ", 'c' to "ඦ", ',' to "ඏ", 'b' to "ඐ",
+            'z' to "ඌ", 'y' to "ඎ", ';' to "ඖ", 'a' to "ෳ",
+            'j' to "ද්‍ව", 'O' to "ද්‍ධ", 'p' to "ඤ්ච", 'P' to "ඤ්ඡ", 'C' to "ඤ්ජ", 'G' to "ට්ඨ")
     }
 }

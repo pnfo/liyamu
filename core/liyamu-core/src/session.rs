@@ -178,6 +178,12 @@ impl Session {
         !self.tokens.is_empty()
     }
 
+    /// Whether AltGr with the key `c` types a letter of its own in the layout in use. Windows apps keep
+    /// Alt+key for themselves, so the keyboard there has to claim just these keys.
+    pub fn alt_layer(&self, c: char) -> bool {
+        self.opts.layout == Layout::Wijesekara && wijesekara::has_alt(c)
+    }
+
     /// Whether `key` would return `handled: true`, without changing anything. Windows asks this before it
     /// sends the key (ITfKeyEventSink::OnTestKeyDown).
     pub fn handles(&self, key: Key, mods: Mods) -> bool {

@@ -101,8 +101,9 @@ mod app {
                       taskbar opens a menu for the layout and the output."),
                 Heading("Typing"),
                 Note("The word being typed is underlined and goes into the text at a space or punctuation. Easy \
-                      Singlish: type as it sounds (aayuboowan → ආයුබෝවන්). Wijesekara: the keys of Sinhala typewriters. \
-                      Helakuru keys: phonetic keys like Helakuru's."),
+                      Singlish: type as it sounds (aayuboowan → ආයුබෝවන්). Wijesekara: the keys of Sinhala typewriters; \
+                      Right Alt (or Ctrl+Alt) with a key types the extra letters, as in the Windows layout: o ඳ, \
+                      v ඬ, . ඟ, x ඞ, c ඦ, z ඌ, b ඐ. Helakuru keys: phonetic keys like Helakuru's."),
                 Heading("Privacy"),
                 Note("Nothing you type leaves this computer: Liyamu has no network code at all. The only thing it keeps \
                       is which suggestion you picked for which letters, in a file in your profile (never from password \

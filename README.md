@@ -124,8 +124,8 @@ Standard Wijesekara keys, plus:
 | `~` after a letter | කර්‍ම | traditional order; at the start of a word it comes first |
 | `w d`, `w e`, `W A`, `t a`, `T a` | ආ ඇ ඌ ඒ ඕ | vowel letters in pieces |
 | `\` between letters | ක්‍ෂ ත්‍ව | joined letters; `` ` `` rakaransaya, `H` yansaya |
-| AltGr `o . v x , C` | ඳ ඟ ඬ ඞ ඏ ඦ | |
-| AltGr `p P c G j O` | ඤ්ච ඤ්ඡ ඤ්ජ ට්ඨ ද්‍ව ද්‍ධ | from Akkharapadayo |
+| AltGr `o . v x c , b z y ;` | ඳ ඟ ඬ ඞ ඦ ඏ ඐ ඌ ඎ ඖ | as the Windows Wijesekara layout (Right Alt or Ctrl+Alt on Windows, Option on macOS); also `f g h k l t` ආ ඇ ඈ ඓ ඕ එ and `a d e q r s w` ෳ ෲ ෛ ෞ ේ ෝ ො |
+| AltGr `p P C G j O` | ඤ්ච ඤ්ඡ ඤ්ජ ට්ඨ ද්‍ව ද්‍ධ | from Akkharapadayo (which had ඤ්ජ on `c`) |
 | Pali mode: `a` after a letter | ඤ‍්ච ම‍්බ | touching letters; ක/ත/න/ද pairs that are normally joined stay joined (න්‍ද, ත්‍ථ); `X` → ඞ |
 
 Logical order (Unicode order, as the Windows layout without Akkharapadayo) is an option.
