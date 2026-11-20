@@ -36,7 +36,7 @@ core/liyamu-cli    `liyamu` command for trying the engine in a terminal
 data/encodings      FM and Isi tables, exported from pitaka.lk
 data/fixtures       20,000 book words converted by pitaka.lk, to check the Rust port against
 data/lexicon        word and word-pair counts, everyday words, names, places, dictionary and Pali words, shortcuts
-tools/              export-encodings.mjs, build-corpus.mjs, build-lexicon.mjs, build-names.mjs
+tools/              export-encodings.mjs, fm-forms-check.py, build-corpus.mjs, build-lexicon.mjs, build-names.mjs
 macos/              the macOS input method and its settings window (Swift, InputMethodKit)
 android/            the Android keyboard and its settings app (Kotlin)
 windows/            the Windows keyboard (TSF text service DLL, Rust), its settings program and installer
@@ -113,6 +113,11 @@ Key notation in tests and the CLI: `␣` Space, `⏎` Enter, `⌫` Backspace, `�
 
 The FM/Isi tables live in pitaka.lk (`tools/unicode/lib/encodings`). After changing them there, run
 `node tools/export-encodings.mjs [path/to/pitaka.lk]` and `cargo test`.
+
+FM fonts have two papillas, two ispillas and two hal signs, and which one is right depends on the letter (කු is
+`l=`, මු is `uq`). Those choices are in pitaka.lk's FM table (`after`, `readOnly` and the order of the keys).
+`tools/fm-forms-check.py` finds them: it draws every syllable in FM Abhaya and
+in Abhaya Uni and reports where other keys look closer than the ones Liyamu writes.
 
 ## Wijesekara
 

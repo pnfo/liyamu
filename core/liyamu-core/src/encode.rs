@@ -23,6 +23,13 @@ struct EncodingJson {
     unpost: Vec<(String, String)>,
     #[serde(default)]
     variants: Vec<VariantJson>,
+    /// keys that are read but never written
+    #[serde(default, rename = "readOnly")]
+    read_only: Vec<String>,
+    /// (sign, key, letters): the sign is written with this key after one of these letters (a consonant, or a
+    /// ්‍ + consonant join). FM fonts have two papillas, ispillas and hal signs: කු is `l=`, මු is `uq`.
+    #[serde(default)]
+    after: Vec<(String, String, Vec<String>)>,
 }
 
 #[derive(Deserialize)]
@@ -58,6 +65,8 @@ pub struct Encoding {
     pre: Rules,
     post: Rules,
     unpost: Rules,
+    /// (letter before, sign) → the key for the sign there
+    after: HashMap<(String, String), String>,
 }
 
 impl Encoding {
@@ -85,8 +94,14 @@ impl Encoding {
         // reverse is built from the final map in insertion order, like convert.js
         for (k, _) in &pairs {
             let u = &map[k];
-            if !reverse.contains_key(u) && !u.chars().all(char::is_whitespace) {
+            if !reverse.contains_key(u) && !u.chars().all(char::is_whitespace) && !e.read_only.contains(k) {
                 reverse.insert(u.clone(), k.clone());
+            }
+        }
+        let mut after = HashMap::new();
+        for (sign, key, prevs) in &e.after {
+            for p in prevs {
+                after.insert((p.clone(), sign.clone()), key.clone());
             }
         }
         let max_len = map.keys().map(|k| k.chars().count()).max().unwrap_or(1);
@@ -99,6 +114,7 @@ impl Encoding {
             pre: rules(&e.pre),
             post: rules(&e.post),
             unpost: rules(&e.unpost),
+            after,
         }
     }
 
@@ -224,6 +240,11 @@ impl Encoding {
         let mut out = String::new();
         let mut i = 0;
         while i < units.len() {
+            if let Some(k) = i.checked_sub(1).and_then(|p| self.after.get(&(units[p].clone(), units[i].clone()))) {
+                out.push_str(k);
+                i += 1;
+                continue;
+            }
             let mut n = units.len() - i;
             while n > 0 {
                 if let Some(k) = self.reverse.get(&units[i..i + n].concat()) {

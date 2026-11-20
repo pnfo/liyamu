@@ -49,6 +49,20 @@ fn fm_matches_pitaka() {
     check(Encoding::fm(), include_str!("../../../data/fixtures/fm-words.tsv"));
 }
 
+/// The key that draws each letter correctly (found with tools/fm-forms-check.py, kept in pitaka.lk's table).
+#[test]
+fn fm_letter_forms() {
+    let cases = [
+        ("කුකූ ගුගූ ඟු තුතූ භුභූ ශුශූ", "l=l+ .=.+ `.= ;=;+ N=N+ Y=Y+"),
+        ("මු නූ සු", "uq kQ iq"),
+        ("ක්‍රු ප්‍රූ රු", "l%e m%E re"),
+        ("ඦ ඣ ඵි ඵී ඨ් ත්‍ථි විද්‍යා", "`c ® Ý Ú GA †‘ úoHd"),
+    ];
+    for (uni, legacy) in cases {
+        assert_eq!(Encoding::fm().from_unicode(uni).as_deref(), Some(legacy), "{uni}");
+    }
+}
+
 #[test]
 fn isi_matches_pitaka() {
     check(Encoding::isi(), include_str!("../../../data/fixtures/isi-words.tsv"));

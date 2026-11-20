@@ -22,6 +22,7 @@ for (const [id, enc] of Object.entries(encs)) {
         // ordered pairs: where keys give the same Unicode, the first one is what fromUnicode() writes
         map: Object.entries(enc.map),
         pre: rules(enc.pre), post: rules(enc.post), unpost: rules(enc.unpost),
+        readOnly: enc.readOnly || [], after: enc.after || [],
         variants: (enc.variants || []).map((v) => ({ fontNames: v.fontNames.map(src), map: Object.entries(v.map) })),
     }
     fs.writeFileSync(path.join(out, 'encodings', id + '.json'), JSON.stringify(json, null, 1) + '\n')
